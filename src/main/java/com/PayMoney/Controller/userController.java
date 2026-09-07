@@ -3,6 +3,7 @@ package com.PayMoney.Controller;
 import com.PayMoney.DTO.addUserRequestDTO;
 import com.PayMoney.DTO.addUserResponseDTO;
 import com.PayMoney.DTO.loginRequestDTO;
+import com.PayMoney.DTO.loginResponseDTO;
 import com.PayMoney.Service.userService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +17,7 @@ public class  userController {
      @Autowired
      private userService userService;
 
+
     //method return type is addUserResponseDTO as controller classreturns this DTO data.
     //this Line  (@RequestBody addUserRequestDTO add_userdto) creates a DTO Request Object.
     @PostMapping("api/addusers")
@@ -23,10 +25,10 @@ public class  userController {
 
         return userService.createUser(add_userdto);
     }
-    @PostMapping("api/login")
-    public addUserResponseDTO login(@RequestBody loginRequestDTO loginRequest) {
-
+    @PostMapping("/api/login")
+    public loginResponseDTO login(@RequestBody loginRequestDTO loginRequest) {
         return userService.login(loginRequest);
     }
+
 
 }
