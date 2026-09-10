@@ -85,4 +85,25 @@ public class userService {
 
         return userMapper.toDTO(user);
     }
+
+    public userResponseDTO updateUser(Long id, userRequestDTO userRequest) {
+
+        userEntity user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.setName(userRequest.getName());
+        user.setEmail(userRequest.getEmail());
+
+        userEntity updatedUser = userRepository.save(user);
+
+        return userMapper.toDTO(updatedUser);
+    }
+
+    public void deleteUser(Long id) {
+
+        userEntity user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        userRepository.delete(user);
+    }
 }

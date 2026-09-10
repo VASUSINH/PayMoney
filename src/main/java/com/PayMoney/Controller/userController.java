@@ -37,9 +37,22 @@ public class  userController {
     public List<userResponseDTO> getAllUsers(){
         return userService.getAllUsers();
    }
-    @GetMapping("/api/users/{id}")
+    @GetMapping("/api/getUserById/{id}")
     public userResponseDTO getUserById(@PathVariable Long id) {
         return userService.getUserById(id);
+    }
+
+    @PutMapping("/api/updateUser/{id}")
+    public userResponseDTO updateUser(
+            @PathVariable Long id,
+            @RequestBody userRequestDTO userRequest) {
+
+        return userService.updateUser(id, userRequest);
+    }
+
+    @DeleteMapping("/api/deleteUser/{id}")
+    public void deleteUser(@PathVariable Long id) {
+        userService.deleteUser(id);
     }
 
 }
