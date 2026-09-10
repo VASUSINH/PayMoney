@@ -18,15 +18,19 @@ public class  userController {
      private userService userService;
 
 
-    //method return type is addUserResponseDTO as controller classreturns this DTO data.
-    //this Line  (@RequestBody addUserRequestDTO add_userdto) creates a DTO Request Object.
+    //method return type is addUserResponseDTO as controller class returns this DTO data.
+    //This Line  (@RequestBody addUserRequestDTO add_userdto) creates a DTO Request Object.
+
+    //Register user Endpoint.
     @PostMapping("api/addusers")
     public addUserResponseDTO createUser(@Valid @RequestBody addUserRequestDTO add_userdto){
 
         return userService.createUser(add_userdto);
     }
+    //This is the Login endpoint.
     @PostMapping("/api/login")
     public loginResponseDTO login(@RequestBody loginRequestDTO loginRequest) {
+
         return userService.login(loginRequest);
     }
 

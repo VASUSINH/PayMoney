@@ -12,7 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import javax.crypto.SecretKey;
 
 @Service
 @AllArgsConstructor
@@ -29,9 +28,14 @@ public class userService {
     @Autowired
     private jwtService jwtService;
 
+
+    //ADD User(Register) Service Class Logic.
+
     public addUserResponseDTO createUser(addUserRequestDTO userRequest) {
 
         userEntity user = userMapper.toEntity(userRequest);
+
+        user.setRole("USER");
 
         user.setPassword(
                 passwordEncoder.encode(userRequest.getPassword())
@@ -39,8 +43,11 @@ public class userService {
 
         userEntity savedUser = userRepository.save(user);
 
-        return userMapper.toResponse(savedUser);
+        return userMapper.toDTO(savedUser);
     }
+
+    // Login user(Authentication) Service Class logic.
+
     public loginResponseDTO login(loginRequestDTO loginRequest) {
 
         userEntity user = userRepository.findByEmail(loginRequest.getEmail())
@@ -54,7 +61,10 @@ public class userService {
         if (!passwordMatches) {
             throw new RuntimeException("Invalid email or password");
         }
-        String token = jwtService.generateToken(user.getEmail());
+
+        //Token is Created after Login.
+
+        String token = jwtService.generateToken(user);
 
 
         return new loginResponseDTO(token);

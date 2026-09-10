@@ -22,7 +22,7 @@ public class userMapper {
             return user;
         }
        //This function converts Entity object to DTO Response Object.
-        public addUserResponseDTO toResponse(userEntity user) {
+        public addUserResponseDTO toDTO(userEntity user) {
 
             return new addUserResponseDTO(
                     user.getId(),
