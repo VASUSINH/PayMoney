@@ -1,7 +1,7 @@
 package com.PayMoney.Mapper;
 
-import com.PayMoney.DTO.addUserRequestDTO;
-import com.PayMoney.DTO.addUserResponseDTO;
+import com.PayMoney.DTO.userRequestDTO;
+import com.PayMoney.DTO.userResponseDTO;
 import com.PayMoney.Entity.userEntity;
 import org.springframework.stereotype.Component;
 
@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 public class userMapper {
 
         //This Function converts DTO Request object to Entity Object.
-        public userEntity toEntity(addUserRequestDTO userRequest) {
+        public userEntity toEntity(userRequestDTO userRequest) {
 
 
 
@@ -22,9 +22,9 @@ public class userMapper {
             return user;
         }
        //This function converts Entity object to DTO Response Object.
-        public addUserResponseDTO toDTO(userEntity user) {
+        public userResponseDTO toDTO(userEntity user) {
 
-            return new addUserResponseDTO(
+            return new userResponseDTO(
                     user.getId(),
                     user.getName(),
                     user.getEmail()

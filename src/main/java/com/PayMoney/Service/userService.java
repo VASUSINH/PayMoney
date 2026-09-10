@@ -1,7 +1,7 @@
 package com.PayMoney.Service;
 
-import com.PayMoney.DTO.addUserRequestDTO;
-import com.PayMoney.DTO.addUserResponseDTO;
+import com.PayMoney.DTO.userRequestDTO;
+import com.PayMoney.DTO.userResponseDTO;
 import com.PayMoney.DTO.loginRequestDTO;
 import com.PayMoney.DTO.loginResponseDTO;
 import com.PayMoney.Entity.userEntity;
@@ -11,6 +11,8 @@ import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 
 @Service
@@ -31,7 +33,7 @@ public class userService {
 
     //ADD User(Register) Service Class Logic.
 
-    public addUserResponseDTO createUser(addUserRequestDTO userRequest) {
+    public userResponseDTO createUser(userRequestDTO userRequest) {
 
         userEntity user = userMapper.toEntity(userRequest);
 
@@ -70,4 +72,17 @@ public class userService {
         return new loginResponseDTO(token);
     }
 
+    public List<userResponseDTO> getAllUsers() {
+        return userRepository.findAll()
+                .stream()
+                .map(userMapper::toDTO)
+                .toList();
+    }
+    public userResponseDTO getUserById(Long id) {
+
+        userEntity user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return userMapper.toDTO(user);
+    }
 }

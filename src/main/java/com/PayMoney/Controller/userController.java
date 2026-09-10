@@ -1,15 +1,15 @@
 package com.PayMoney.Controller;
 
-import com.PayMoney.DTO.addUserRequestDTO;
-import com.PayMoney.DTO.addUserResponseDTO;
+import com.PayMoney.DTO.userRequestDTO;
+import com.PayMoney.DTO.userResponseDTO;
 import com.PayMoney.DTO.loginRequestDTO;
 import com.PayMoney.DTO.loginResponseDTO;
 import com.PayMoney.Service.userService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 public class  userController {
@@ -18,12 +18,12 @@ public class  userController {
      private userService userService;
 
 
-    //method return type is addUserResponseDTO as controller class returns this DTO data.
-    //This Line  (@RequestBody addUserRequestDTO add_userdto) creates a DTO Request Object.
+    //method return type is userResponseDTO as controller class returns this DTO data.
+    //This Line  (@RequestBody userRequestDTO add_userdto) creates a DTO Request Object.
 
     //Register user Endpoint.
     @PostMapping("api/addusers")
-    public addUserResponseDTO createUser(@Valid @RequestBody addUserRequestDTO add_userdto){
+    public userResponseDTO createUser(@Valid @RequestBody userRequestDTO add_userdto){
 
         return userService.createUser(add_userdto);
     }
@@ -33,6 +33,13 @@ public class  userController {
 
         return userService.login(loginRequest);
     }
-
+   @GetMapping("api/allusers")
+    public List<userResponseDTO> getAllUsers(){
+        return userService.getAllUsers();
+   }
+    @GetMapping("/api/users/{id}")
+    public userResponseDTO getUserById(@PathVariable Long id) {
+        return userService.getUserById(id);
+    }
 
 }
