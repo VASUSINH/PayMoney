@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class walletMapper {
 
-    //This Function Converts Received Wallet Entity Object From DB to Wallet response DTO.
+    //This Function Converts Received Wallet Entity Object From DB to Wallet Response DTO.
     public walletResponseDTO toDTO(walletEntity wallet) {
         return new walletResponseDTO(
                 wallet.getWalletId(),
