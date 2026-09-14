@@ -18,17 +18,25 @@ import java.util.List;
 public class userEntity {
     @Id
     @GeneratedValue(strategy= GenerationType.IDENTITY)
-    private Long  id;
-    private String name;
-    private String email;
-    private String password;
-    private String role;
+    @Column(name = "userId")
+    private Long  userId;
 
+    @Column(nullable = false)
+    private String name;
+
+    @Column(nullable = false, unique = true)
+    private String email;
+
+    @Column(nullable = false)
+    private String password;
+
+    @Column(nullable = false)
+    private String role;
 
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(
-                new SimpleGrantedAuthority("ROLE_" + role)
-        );
+                new SimpleGrantedAuthority("ROLE_" + role));
+
     }
 
 }

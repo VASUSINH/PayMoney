@@ -3,21 +3,23 @@ package com.PayMoney.Service;
 import com.PayMoney.Entity.userEntity;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
+
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
-import java.util.Date;
+import java.nio.charset.StandardCharsets;
+
 
 @Service
 public class jwtService {
 //This Class is Responsible to handle JWT Operations(create,extract,validate).
 private final SecretKey secretKey;
 
-    public jwtService() {
+    public jwtService(@Value("${jwt.secret}") String secret) {
         this.secretKey = Keys.hmacShaKeyFor(
-                "my-super-secret-key-for-payflow-jwt-2026".getBytes()
+                secret.getBytes(StandardCharsets.UTF_8)
         );
     }
     // This Method is Responsible to Generate Tokens using email.

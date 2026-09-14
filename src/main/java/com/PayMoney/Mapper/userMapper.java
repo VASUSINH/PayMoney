@@ -25,7 +25,7 @@ public class userMapper {
         public userResponseDTO toDTO(userEntity user) {
 
             return new userResponseDTO(
-                    user.getId(),
+                    user.getUserId(),
                     user.getName(),
                     user.getEmail()
             );
