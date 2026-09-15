@@ -10,6 +10,7 @@ import com.PayMoney.Exception.insufficientBalanceException;
 import com.PayMoney.Exception.invalidTransactionException;
 import com.PayMoney.Exception.transactionNotFoundException;
 import com.PayMoney.Exception.walletNotFoundException;
+import com.PayMoney.Mapper.transactionMapper;
 import com.PayMoney.Repository.transactionRepository;
 import com.PayMoney.Repository.walletRepository;
 import jakarta.transaction.Transactional;
@@ -28,18 +29,39 @@ public class transactionService {
     @Autowired
     private transactionRepository transactionRepository;
 
+    @Autowired
+    private transactionMapper transactionMapper;
+
     @Transactional
     public transactionResponseDTO transfer(transactionRequestDTO request) {
 
         // Get sender wallet
-        walletEntity sender = walletRepository.findById(request.getSenderWalletId())
-                .orElseThrow(() ->
-                        new walletNotFoundException("Sender wallet not found"));
+        Long senderId = request.getSenderWalletId();
+        Long receiverId = request.getReceiverWalletId();
 
-        // Get receiver wallet
-        walletEntity receiver = walletRepository.findById(request.getReceiverWalletId())
+        if (senderId.equals(receiverId)) {
+            throw new invalidTransactionException(
+                    "Cannot transfer to the same wallet");
+        }
+
+        Long firstId = Math.min(senderId, receiverId);
+        Long secondId = Math.max(senderId, receiverId);
+
+        walletEntity firstWallet = walletRepository.findWalletForUpdate(firstId)
                 .orElseThrow(() ->
-                        new walletNotFoundException("Receiver wallet not found"));
+                        new walletNotFoundException("Wallet not found"));
+
+        walletEntity secondWallet = walletRepository.findWalletForUpdate(secondId)
+                .orElseThrow(() ->
+                        new walletNotFoundException("Wallet not found"));
+
+        walletEntity sender = senderId.equals(firstId)
+                ? firstWallet
+                : secondWallet;
+
+        walletEntity receiver = receiverId.equals(firstId)
+                ? firstWallet
+                : secondWallet;
 
         // Don't allow transferring to yourself
         if (sender.getWalletId().equals(receiver.getWalletId())) {
@@ -77,15 +99,7 @@ public class transactionService {
         transactionEntity savedTransaction =
                 transactionRepository.save(transaction);
 
-        return new transactionResponseDTO(
-                savedTransaction.getTransactionId(),
-                sender.getWalletId(),
-                receiver.getWalletId(),
-                savedTransaction.getAmount(),
-                savedTransaction.getType(),
-                savedTransaction.getStatus(),
-                savedTransaction.getCreatedAt()
-        );
+        return transactionMapper.toDTO(savedTransaction);
     }
 
     public List<transactionResponseDTO> getWalletTransactions(Long walletId) {
@@ -95,32 +109,20 @@ public class transactionService {
                         .findBySenderWallet_WalletIdOrReceiverWallet_WalletId(walletId, walletId);
 
         return transactions.stream()
-                .map(transaction -> new transactionResponseDTO(
-                        transaction.getTransactionId(),
-                        transaction.getSenderWallet().getWalletId(),
-                        transaction.getReceiverWallet().getWalletId(),
-                        transaction.getAmount(),
-                        transaction.getType(),
-                        transaction.getStatus(),
-                        transaction.getCreatedAt()
-                ))
+                .map(transactionMapper::toDTO)
                 .toList();
     }
 
     public transactionResponseDTO getTransactionById(Long transactionId) {
 
+
         transactionEntity transaction = transactionRepository.findById(transactionId)
                 .orElseThrow(() ->
                         new transactionNotFoundException("Transaction not found"));
 
-        return new transactionResponseDTO(
-                transaction.getTransactionId(),
-                transaction.getSenderWallet().getWalletId(),
-                transaction.getReceiverWallet().getWalletId(),
-                transaction.getAmount(),
-                transaction.getType(),
-                transaction.getStatus(),
-                transaction.getCreatedAt()
-        );
+        return transactionMapper.toDTO(transaction);
     }
+
+
 }
+

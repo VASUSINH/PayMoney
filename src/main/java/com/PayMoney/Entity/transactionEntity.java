@@ -20,11 +20,11 @@ public class transactionEntity {
         private Long transactionId;
 
         @ManyToOne
-        @JoinColumn(name = "sender_wallet_id", nullable = false)
+        @JoinColumn(name = "sender_wallet_id")
         private walletEntity senderWallet;
 
         @ManyToOne
-        @JoinColumn(name = "receiver_wallet_id", nullable = false)
+        @JoinColumn(name = "receiver_wallet_id")
         private walletEntity receiverWallet;
 
         @Column(nullable = false, precision = 19, scale = 2)
