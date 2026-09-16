@@ -5,6 +5,7 @@ import com.PayMoney.DTO.transferResponseDTO;
 import com.PayMoney.Service.transactionService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,6 +17,7 @@ public class transactionController {
     private transactionService transactionService;
 
     @PostMapping("/api/transactions/transfer")
+    @PreAuthorize("hasRole('USER')")
     public transferResponseDTO transfer(
             @Valid @RequestBody transferRequestDTO request) {
 
@@ -23,6 +25,7 @@ public class transactionController {
     }
 
     @GetMapping("/api/transactions/wallet/{walletId}")
+    @PreAuthorize("hasRole('USER')")
     public List<transferResponseDTO> getWalletTransactions(
             @PathVariable Long walletId) {
 
@@ -30,6 +33,7 @@ public class transactionController {
     }
 
     @GetMapping("/api/transactions/{transactionId}")
+    @PreAuthorize("hasRole('USER')")
     public transferResponseDTO getTransactionById(
             @PathVariable Long transactionId) {
 

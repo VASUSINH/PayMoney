@@ -7,6 +7,7 @@ import com.PayMoney.DTO.loginResponseDTO;
 import com.PayMoney.Service.userService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -33,16 +34,19 @@ public class  userController {
 
         return userService.login(loginRequest);
     }
-   @GetMapping("api/allusers")
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("api/allusers")
     public List<userResponseDTO> getAllUsers(){
         return userService.getAllUsers();
    }
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/api/getUserById/{id}")
     public userResponseDTO getUserById(@PathVariable Long id) {
         return userService.getUserById(id);
     }
 
     @PutMapping("/api/updateUser/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public userResponseDTO updateUser(
             @PathVariable Long id,
             @RequestBody userRequestDTO userRequest) {
@@ -51,6 +55,7 @@ public class  userController {
     }
 
     @DeleteMapping("/api/deleteUser/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public void deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
     }

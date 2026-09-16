@@ -6,6 +6,7 @@ import com.PayMoney.DTO.withdrawRequestDTO;
 import com.PayMoney.Service.walletService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -16,12 +17,14 @@ public class walletController {
 
 
     @GetMapping("/api/wallet")
+    @PreAuthorize("hasRole('USER')")
     public walletResponseDTO getMyWallet() {
         return walletService.getMyWallet();
     }
 
     //Deposit the Amount.
     @PostMapping("/api/wallet/deposit")
+    @PreAuthorize("hasRole('USER')")
     public walletResponseDTO deposit(
             @Valid @RequestBody depositRequestDTO request) {
 
@@ -30,6 +33,7 @@ public class walletController {
 
     //Withdraw the Amount
     @PostMapping("/api/wallet/withdraw")
+    @PreAuthorize("hasRole('USER')")
     public walletResponseDTO withdraw(
             @Valid @RequestBody withdrawRequestDTO request) {
 
