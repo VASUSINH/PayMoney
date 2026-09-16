@@ -141,7 +141,29 @@ flowchart TB
 
 ## ✅ Core Features
 
-(unchanged but clearly separated tables and feature grouping)
+### Implemented
+
+| # | Module | Description |
+|---|---|---|
+| 1 | **User Management** | User registration, profile management, PostgreSQL persistence via JPA |
+| 2 | **DTO + Validation** | Clean request/response contracts, input validation, centralized exception handling |
+| 3 | **Authentication (JWT)** | Stateless login/signup flow secured with Spring Security + JWT access tokens |
+| 4 | **Authorization (RBAC)** | Role-based endpoint protection (e.g. `USER`, `ADMIN`) using method/URL-level security |
+| 5 | **Wallet Management** | Create & manage user wallets, balance tracking, wallet-to-user linkage |
+| 6 | **Transactions** | Atomic fund transfers using `@Transactional`, preventing race conditions & partial updates |
+
+### 🚧 In Progress / Upcoming
+
+| # | Module | Purpose |
+|---|---|---|
+| 7 | **Payment Gateway Integration** | Connect wallet to external payment providers (e.g. Razorpay/Stripe-style flow) |
+| 8 | **Refunds** | Reverse transactions safely with full audit trail |
+| 9 | **Fraud Detection** | Rule-based checks (velocity limits, suspicious patterns) before transaction approval |
+| 10 | **Idempotency** | Idempotency-key mechanism to make retried payment requests safe |
+| 11 | **Webhooks** | Async event notifications for payment status changes |
+| 12 | **Audit Logging** | Immutable log of every sensitive action (who did what, when) |
+| 13 | **Flyway + Swagger + Actuator + Scheduler** | DB versioning, live API docs, health monitoring, scheduled jobs |
+| 14 | **Testing + Docker + Polish** | Unit/integration tests (JUnit + Mockito), containerization, final hardening |
 
 ---
 
