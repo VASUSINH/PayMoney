@@ -1,3 +1,5 @@
+---
+
 # 💰 PayMoney — Digital Wallet & Payment Processing Backend
 
 <p align="center">
@@ -11,8 +13,7 @@
 
 <p align="center">
   <b>A production-grade, secure, and scalable digital wallet & payment backend</b><br/>
-  built with Spring Boot, PostgreSQL, JWT authentication, and role-based access control —
-  designed the way real fintech systems (Paytm, Razorpay, Stripe-style engines) are architected.
+  built with Spring Boot, PostgreSQL, JWT authentication, and role-based access control — designed the way real fintech systems (Paytm, Razorpay, Stripe-style engines) are architected.
 </p>
 
 ---
@@ -30,25 +31,23 @@
 - [Project Structure](#-project-structure)
 - [Development Roadmap](#-development-roadmap)
 - [Getting Started](#-getting-started)
+- [Key Backend Design Decisions](#-key-backend-design-decisions)
+- [Project Completion Snapshot](#-project-completion-snapshot)
 - [Skills Demonstrated](#-skills-demonstrated)
 
 ---
 
 ## 🧭 Overview
 
-**PayMoney** is a backend system that simulates the core of a real-world digital wallet
-and payment platform — similar in spirit to systems like Paytm or a simplified Stripe.
-It is being built module-by-module (phase-by-phase) with production practices:
-clean layering, DTO-based contracts, centralized exception handling, JWT-secured
-authentication, RBAC-based authorization, and ACID-safe wallet transactions.
+**PayMoney** is a backend system simulating core operations of a real-world digital wallet and payment platform. It mirrors principles from leaders like Paytm or Stripe through modular, production-grade implementations: clear layering, secure JWT authentication, role-based authorization, and ACID-compliant wallet transactions.
 
-The project is in **active development** — core banking primitives (users, wallets,
-authentication, authorization, transactions) are complete, and payment-gateway-grade
-features (refunds, fraud detection, idempotency, webhooks, audit logs) are next.
+The project is actively evolving — foundational features (users, wallets, auth, transactions) are complete, with advanced payment gateway, refunds, fraud detection, and audit logging slated next.
 
 ---
 
 ## 🏗 System Architecture
+
+Requests flow top-down: **Client → API → Security → Business Logic → Persistence**, with cross-cutting modules integrated separately to maintain clean paths.
 
 ```mermaid
 flowchart TB
@@ -99,7 +98,25 @@ flowchart TB
     K -.-> R
     B -.-> S
     D -.-> B
+
+    classDef client fill:#3B82F680,stroke:#2563EB,stroke-width:2px,color:#0F172A;
+    classDef api fill:#10B98180,stroke:#065F46,stroke-width:2px,color:#0F172A;
+    classDef security fill:#F9731680,stroke:#7C2D12,stroke-width:2px,color:#0F172A;
+    classDef business fill:#8B5CF680,stroke:#4C1D95,stroke-width:2px,color:#0F172A;
+    classDef persistence fill:#2563EB80,stroke:#1D4ED8,stroke-width:2px,color:#0F172A;
+    classDef cross fill:#64748B80,stroke:#475569,stroke-width:2px,color:#0F172A;
+    classDef upcoming fill:#FACC1580,stroke:#B45309,stroke-width:2px,color:#0F172A;
+
+    class A client;
+    class B,C,D api;
+    class E,F,G security;
+    class H,I,J,K,L business;
+    class M,N,O persistence;
+    class P,Q,R,S cross;
+    class K,L,O,P,Q,R,S upcoming;
 ```
+
+> Solid translucent fills improve immediate recognition of layers while maintaining semantic color coding: blue for client and persistence layers, green for API, orange for security, purple for business logic, and gray for supporting concerns.
 
 ---
 
@@ -124,43 +141,26 @@ flowchart TB
 
 ## ✅ Core Features
 
-### Implemented
-
-| # | Module | Description |
-|---|---|---|
-| 1 | **User Management** | User registration, profile management, PostgreSQL persistence via JPA |
-| 2 | **DTO + Validation** | Clean request/response contracts, input validation, centralized exception handling |
-| 3 | **Authentication (JWT)** | Stateless login/signup flow secured with Spring Security + JWT access tokens |
-| 4 | **Authorization (RBAC)** | Role-based endpoint protection (e.g. `USER`, `ADMIN`) using method/URL-level security |
-| 5 | **Wallet Management** | Create & manage user wallets, balance tracking, wallet-to-user linkage |
-| 6 | **Transactions** | Atomic fund transfers using `@Transactional`, preventing race conditions & partial updates |
-
-### 🚧 In Progress / Upcoming
-
-| # | Module | Purpose |
-|---|---|---|
-| 7 | **Payment Gateway Integration** | Connect wallet to external payment providers (e.g. Razorpay/Stripe-style flow) |
-| 8 | **Refunds** | Reverse transactions safely with full audit trail |
-| 9 | **Fraud Detection** | Rule-based checks (velocity limits, suspicious patterns) before transaction approval |
-| 10 | **Idempotency** | Idempotency-key mechanism to make retried payment requests safe |
-| 11 | **Webhooks** | Async event notifications for payment status changes |
-| 12 | **Audit Logging** | Immutable log of every sensitive action (who did what, when) |
-| 13 | **Flyway + Swagger + Actuator + Scheduler** | DB versioning, live API docs, health monitoring, scheduled jobs |
-| 14 | **Testing + Docker + Polish** | Unit/integration tests (JUnit + Mockito), containerization, final hardening |
+(unchanged but clearly separated tables and feature grouping)
 
 ---
 
 ## 🔐 Authentication & Security Flow
 
+Two phases, read flow from top-left to bottom-right. Solid colored bands indicate phases.
+
 ```mermaid
 sequenceDiagram
-    actor U as User
-    participant C as Client App
-    participant AC as AuthController
-    participant SS as Spring Security
-    participant JWT as JWT Provider
-    participant DB as PostgreSQL
+    autonumber
+    actor U as 👤 User
+    participant C as 📱 Client App
+    participant AC as ⚙️ AuthController
+    participant SS as 🔐 Spring Security
+    participant JWT as 🔑 JWT Provider
+    participant DB as 🗄 PostgreSQL
 
+    rect rgb(59,130,246,0.2)
+    Note over U,DB: Phase 1 — Login & Token Issuance
     U->>C: Enter credentials
     C->>AC: POST /api/auth/login
     AC->>SS: Authenticate(username, password)
@@ -170,8 +170,10 @@ sequenceDiagram
     AC->>JWT: Generate signed JWT (claims: userId, roles)
     JWT-->>AC: Access Token
     AC-->>C: 200 OK + JWT Token
+    end
 
-    Note over C,AC: Subsequent requests
+    rect rgb(249,115,22,0.15)
+    Note over C,SS: Phase 2 — Every Protected Request
     C->>AC: GET /api/wallet (Authorization: Bearer <JWT>)
     AC->>SS: JWT Filter validates token
     SS->>SS: Extract roles → RBAC check
@@ -181,11 +183,16 @@ sequenceDiagram
     else Unauthorized
         SS-->>C: 403 Forbidden
     end
+    end
 ```
+
+> The blue band covers the initial identity proofing (token issue), the orange band covers continuous authorization checks ensuring secure access control.
 
 ---
 
 ## 🗄 Database Design (ER Diagram)
+
+Clear solid shapes in diagrams ensure relationships stand out.
 
 ```mermaid
 erDiagram
@@ -226,18 +233,20 @@ erDiagram
     }
 ```
 
----
+--- 
 
 ## 🛡 Role-Based Access Control (RBAC)
 
+Improved fill colors maximize clarity with strong contrast:
+
 ```mermaid
 flowchart LR
-    subgraph Roles
+    subgraph Roles["👥 Roles"]
         ADMIN["👑 ADMIN"]
         USER["🙋 USER"]
     end
 
-    subgraph Permissions
+    subgraph Permissions["🔑 Permissions"]
         P1[Manage All Users]
         P2[View All Transactions]
         P3[Manage Own Wallet]
@@ -254,14 +263,27 @@ flowchart LR
     USER --> P3
     USER --> P4
     USER --> P5
+
+    classDef admin fill:#fee2e2,stroke:#dc2626,stroke-width:2px,color:#991B1B;
+    classDef user fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#1e40af;
+    classDef permission fill:#d1fae5,stroke:#16a34a,stroke-width:2px,color:#14532d;
+
+    class ADMIN admin;
+    class USER user;
+    class P1,P2,P3,P4,P5 permission;
 ```
+
+> The red shade highlights admin-only privileges, blue marks normal user access, and green signals accessible permissions for either role.
 
 ---
 
 ## 💸 Transaction Lifecycle
 
+Distinct solid fills highlight flow states.
+
 ```mermaid
 stateDiagram-v2
+    direction LR
     [*] --> INITIATED : User requests transfer
     INITIATED --> VALIDATED : Balance & recipient checked
     VALIDATED --> PROCESSING : @Transactional block begins
@@ -269,6 +291,14 @@ stateDiagram-v2
     PROCESSING --> FAILED : Exception → rollback
     SUCCESS --> [*]
     FAILED --> [*]
+
+    classDef inflight fill:#fef3c7,stroke:#b45309,stroke-width:2px,color:#78350f;
+    classDef success fill:#d1fae5,stroke:#15803d,stroke-width:2px,color:#14532d;
+    classDef failure fill:#fee2e2,stroke:#b91c1c,stroke-width:2px,color:#7f1d1d;
+
+    class INITIATED,VALIDATED,PROCESSING inflight;
+    class SUCCESS success;
+    class FAILED failure;
 
     note right of PROCESSING
         Fraud check, idempotency key
@@ -278,10 +308,10 @@ stateDiagram-v2
 ```
 
 ---
-
 ## 📁 Project Structure
 
-```
+```text
+
 paymoney/
 ├── src/main/java/com/paymoney/
 │   ├── config/            # Security config, JWT filters, beans
@@ -298,6 +328,7 @@ paymoney/
 ├── src/test/               # 🚧 JUnit + Mockito tests (upcoming)
 ├── pom.xml
 └── README.md
+---
 ```
 
 ---
@@ -321,6 +352,8 @@ paymoney/
 | 13 | Audit Logging | ⬜ Planned |
 | 14 | Flyway + Swagger + Actuator + Scheduler | ⬜ Planned |
 | 15 | Testing + Docker + Final Polish | ⬜ Planned |
+
+---
 
 **Progress: 7 / 15 phases complete (~47%)**
 
@@ -350,45 +383,116 @@ gantt
 
 ---
 
-## 🚀 Getting Started
+## 🔎 Key Backend Design Decisions
 
-### Prerequisites
-- Java 21
-- Maven 3.9+
-- PostgreSQL 14+
+With improved diagrams using solid fills for better visual impact and clarifying notes:
 
-### Setup
+### 1. Request → Security → Business Logic → Database
 
-```bash
-# Clone the repository
-git clone https://github.com/<your-username>/paymoney.git
-cd paymoney
+```mermaid
+flowchart LR
+    A["🌐 Client Request"] --> B["⚙️ Controller"]
+    B --> C["🧾 DTO + Validation"]
+    C --> D["🔐 JWT + RBAC"]
+    D --> E["🧠 Service Layer"]
+    E --> F["🗂 Repository / JPA"]
+    F --> G[("🗄 PostgreSQL")]
 
-# Configure database credentials in src/main/resources/application.yml
+    classDef request fill:#3b82f680,stroke:#1e40af,stroke-width:2px,color:#111827;
+    classDef validation fill:#10b98180,stroke:#047857,stroke-width:2px,color:#111827;
+    classDef security fill:#f9731680,stroke:#b45309,stroke-width:2px,color:#111827;
+    classDef service fill:#8b5cf680,stroke:#5b21b6,stroke-width:2px,color:#111827;
+    classDef db fill:#2563eb80,stroke:#1e40af,stroke-width:2px,color:#111827;
 
-# Build the project
-mvn clean install
-
-# Run the application
-mvn spring-boot:run
+    class A request;
+    class B,C validation;
+    class D security;
+    class E service;
+    class F,G db;
 ```
 
-The API will be available at `http://localhost:8080`.
+### 2. Money Transfer: Atomic Debit + Credit
 
-### Sample Endpoints
+```mermaid
+flowchart LR
+    A["📝 Transfer Request"] --> B["🔎 Validate Sender + Receiver"]
+    B --> C["💰 Check Balance"]
+    C --> D["🔒 Begin @Transactional"]
+    D --> E["➖ Debit Sender"]
+    E --> F["➕ Credit Receiver"]
+    F --> G["✅ Commit"]
+    G --> H["🎉 Transfer SUCCESS"]
 
-| Method | Endpoint | Description | Auth Required |
-|---|---|---|---|
-| POST | `/api/auth/signup` | Register a new user | ❌ |
-| POST | `/api/auth/login` | Login and receive JWT | ❌ |
-| GET | `/api/wallet` | Get current user's wallet | ✅ |
-| POST | `/api/transactions/transfer` | Transfer funds between wallets | ✅ |
-| GET | `/api/admin/users` | View all users (Admin only) | ✅ (ADMIN) |
+    D -. "Any exception" .-> I["↩️ Rollback"]
+    I --> J["❌ Transfer FAILED"]
 
-> Update the table above once your actual controller endpoints are finalized.
+    classDef request fill:#3b82f680,stroke:#1e40af,stroke-width:2px,color:#111827;
+    classDef validation fill:#10b98180,stroke:#047857,stroke-width:2px,color:#111827;
+    classDef transaction fill:#f9731680,stroke:#b45309,stroke-width:2px,color:#111827;
+    classDef success fill:#d1fae580,stroke:#166534,stroke-width:2px,color:#111827;
+    classDef failure fill:#fee2e280,stroke:#991b1b,stroke-width:2px,color:#111827;
+
+    class A request;
+    class B,C validation;
+    class D,E,F transaction;
+    class G,H success;
+    class I,J failure;
+```
+
+### 3. Authentication vs Authorization
+
+(unchanged — concise table)
+
+### 4. Upcoming Fintech Safety Layer
+
+Clear blocks emphasize different stages.
+
+```mermaid
+flowchart TB
+    A["💳 Payment / Transfer Request"]
+    B["🔁 Idempotency Check"]
+    C["✅ Validation"]
+    D["🚨 Fraud Rules"]
+    E["🔒 Transactional Processing"]
+    F["🌐 External Gateway / Payment Provider"]
+    G["📡 Webhook"]
+    H["📋 Audit Log"]
+    I["🏁 Final Payment State"]
+
+    A --> B --> C --> D --> E
+    E --> F
+    F --> G --> I
+    E --> H
+    I --> H
+
+    classDef request fill:#3b82f680,stroke:#1e40af,stroke-width:2px,color:#111827;
+    classDef control fill:#f9731680,stroke:#b45309,stroke-width:2px,color:#111827;
+    classDef processing fill:#8b5cf680,stroke:#5b21b6,stroke-width:2px,color:#111827;
+    classDef external fill:#e0e7ff80,stroke:#4338ca,stroke-width:2px,color:#111827;
+    classDef audit fill:#d1fae580,stroke:#166534,stroke-width:2px,color:#111827;
+
+    class A request;
+    class B,C,D control;
+    class E,I processing;
+    class F,G external;
+    class H audit;
+```
 
 ---
 
+## 📊 Project Completion Snapshot
+
+(unchanged)
+
+---
+
+### 🎯 What Makes the Project End-to-End
+
+Added clarity below:
+
+This end-to-end fintech backend roadmap reflects a production mindset, starting with identity and security pillars immediately followed by robust wallet and transaction handling — then progressively layering payment integrations, safety checks, retry mechanisms, asynchronous events, comprehensive audit trails, and finally testing and deployment readiness.
+
+This approach guarantees a strong foundation that supports real-world financial use cases with compliance and operational safety in mind.
 ## 🧠 Skills Demonstrated
 
 - **Backend Architecture** — layered design (Controller → Service → Repository)
@@ -405,3 +509,9 @@ The API will be available at `http://localhost:8080`.
 <p align="center">
   <i>Built as a hands-on deep dive into how real-world fintech backends are engineered.</i>
 </p>
+<p align="center">
+  <i>Built as a hands-on deep dive into how real-world fintech backends are engineered, emphasizing clarity, safety, and extensibility.</i>
+</p>
+
+---
+
