@@ -116,8 +116,6 @@ flowchart TB
     class K,L,O,P,Q,R,S upcoming;
 ```
 
-> Solid translucent fills improve immediate recognition of layers while maintaining semantic color coding: blue for client and persistence layers, green for API, orange for security, purple for business logic, and gray for supporting concerns.
-
 ---
 
 ## 🛠 Tech Stack
