@@ -1,15 +1,15 @@
 package com.PayMoney.Mapper;
 
-import com.PayMoney.DTO.transactionResponseDTO;
+import com.PayMoney.DTO.transferResponseDTO;
 import com.PayMoney.Entity.transactionEntity;
 import org.springframework.stereotype.Component;
 
 @Component
 public class transactionMapper {
 
-    public transactionResponseDTO toDTO(transactionEntity transaction) {
+    public transferResponseDTO toDTO(transactionEntity transaction) {
 
-        return new transactionResponseDTO(
+        return new transferResponseDTO(
                 transaction.getTransactionId(),
 
                 transaction.getSenderWallet() != null

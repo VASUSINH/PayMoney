@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 
 @Data
 @AllArgsConstructor
-    public class transactionResponseDTO {
+    public class transferResponseDTO {
 
         private Long transactionId;
         private Long senderWalletId;

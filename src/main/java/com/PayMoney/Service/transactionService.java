@@ -1,11 +1,8 @@
 package com.PayMoney.Service;
 
-import com.PayMoney.DTO.transactionRequestDTO;
-import com.PayMoney.DTO.transactionResponseDTO;
-import com.PayMoney.Entity.transactionEntity;
-import com.PayMoney.Entity.transactionStatus;
-import com.PayMoney.Entity.transactionType;
-import com.PayMoney.Entity.walletEntity;
+import com.PayMoney.DTO.transferRequestDTO;
+import com.PayMoney.DTO.transferResponseDTO;
+import com.PayMoney.Entity.*;
 import com.PayMoney.Exception.insufficientBalanceException;
 import com.PayMoney.Exception.invalidTransactionException;
 import com.PayMoney.Exception.transactionNotFoundException;
@@ -32,17 +29,15 @@ public class transactionService {
     @Autowired
     private transactionMapper transactionMapper;
 
+    @Autowired
+    private authService authService;
+
     @Transactional
-    public transactionResponseDTO transfer(transactionRequestDTO request) {
+    public transferResponseDTO transfer(transferRequestDTO request) {
 
         // Get sender wallet
         Long senderId = request.getSenderWalletId();
         Long receiverId = request.getReceiverWalletId();
-
-        if (senderId.equals(receiverId)) {
-            throw new invalidTransactionException(
-                    "Cannot transfer to the same wallet");
-        }
 
         Long firstId = Math.min(senderId, receiverId);
         Long secondId = Math.max(senderId, receiverId);
@@ -62,6 +57,13 @@ public class transactionService {
         walletEntity receiver = receiverId.equals(firstId)
                 ? firstWallet
                 : secondWallet;
+
+        userEntity user = authService.getAuthenticatedUser();
+
+        if (!sender.getUser().getUserId().equals(user.getUserId())) {
+            throw new invalidTransactionException(
+                    "Sender wallet does not belong to authenticated user");
+        }
 
         // Don't allow transferring to yourself
         if (sender.getWalletId().equals(receiver.getWalletId())) {
@@ -102,27 +104,63 @@ public class transactionService {
         return transactionMapper.toDTO(savedTransaction);
     }
 
-    public List<transactionResponseDTO> getWalletTransactions(Long walletId) {
+    //Get Wallet transaction Details
+    public List<transferResponseDTO> getWalletTransactions(Long walletId) {
+
+        userEntity user = authService.getAuthenticatedUser();
+
+        walletEntity wallet = walletRepository.findById(walletId)
+                .orElseThrow(() ->
+                        new walletNotFoundException("Wallet not found"));
+
+        if (!wallet.getUser().getUserId().equals(user.getUserId())) {
+            throw new invalidTransactionException(
+                    "Wallet does not belong to authenticated user");
+        }
 
         List<transactionEntity> transactions =
                 transactionRepository
-                        .findBySenderWallet_WalletIdOrReceiverWallet_WalletId(walletId, walletId);
+                        .findBySenderWallet_WalletIdOrReceiverWallet_WalletId(
+                                walletId, walletId);
 
         return transactions.stream()
                 .map(transactionMapper::toDTO)
                 .toList();
     }
 
-    public transactionResponseDTO getTransactionById(Long transactionId) {
+    // Get Transaction By Transaction ID
+    public transferResponseDTO getTransactionById(Long transactionId) {
 
+        userEntity user = authService.getAuthenticatedUser();
 
-        transactionEntity transaction = transactionRepository.findById(transactionId)
+        walletEntity userWallet = walletRepository
+                .findByUser_UserId(user.getUserId())
                 .orElseThrow(() ->
-                        new transactionNotFoundException("Transaction not found"));
+                        new walletNotFoundException("Wallet not found"));
+
+        transactionEntity transaction =
+                transactionRepository.findById(transactionId)
+                        .orElseThrow(() ->
+                                new transactionNotFoundException(
+                                        "Transaction not found"));
+
+        boolean isSender =
+                transaction.getSenderWallet() != null &&
+                        transaction.getSenderWallet().getWalletId()
+                                .equals(userWallet.getWalletId());
+
+        boolean isReceiver =
+                transaction.getReceiverWallet() != null &&
+                        transaction.getReceiverWallet().getWalletId()
+                                .equals(userWallet.getWalletId());
+
+        if (!isSender && !isReceiver) {
+            throw new invalidTransactionException(
+                    "Transaction does not belong to authenticated user");
+        }
 
         return transactionMapper.toDTO(transaction);
     }
-
 
 }
 

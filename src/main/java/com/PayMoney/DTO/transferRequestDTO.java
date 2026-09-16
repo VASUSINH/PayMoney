@@ -7,7 +7,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 
 @Data
-public class transactionRequestDTO {
+public class transferRequestDTO {
         @NotNull
         private Long senderWalletId;
 
@@ -15,7 +15,7 @@ public class transactionRequestDTO {
         private Long receiverWalletId;
 
         @NotNull
-        @DecimalMin(value = "0.01")
+        @DecimalMin(value = "1.0")
         private BigDecimal amount;
     }
 

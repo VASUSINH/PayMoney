@@ -1,10 +1,9 @@
 package com.PayMoney.Service;
 
 import com.PayMoney.DTO.walletResponseDTO;
-import com.PayMoney.Entity.transactionEntity;
-import com.PayMoney.Entity.transactionStatus;
-import com.PayMoney.Entity.transactionType;
-import com.PayMoney.Entity.walletEntity;
+import com.PayMoney.Entity.*;
+import com.PayMoney.Exception.insufficientBalanceException;
+import com.PayMoney.Exception.walletNotFoundException;
 import com.PayMoney.Mapper.walletMapper;
 import com.PayMoney.Repository.transactionRepository;
 import com.PayMoney.Repository.walletRepository;
@@ -20,18 +19,25 @@ public class walletService {
 
     @Autowired
     private walletRepository walletRepository;
+
     @Autowired
     private walletMapper walletMapper;
 
     @Autowired
     private transactionRepository transactionRepository;
 
-    //Fetch the wallet by user_id
-    public walletResponseDTO getWalletByUserId(Long userId) {
+    @Autowired
+    private authService authService;
 
+    //Fetch the wallet
+    public walletResponseDTO getMyWallet() {
 
-        walletEntity wallet = walletRepository.findByUser_UserId(userId)
-                .orElseThrow(() -> new RuntimeException("Wallet not found"));
+        userEntity user = authService.getAuthenticatedUser();
+
+        walletEntity wallet = walletRepository
+                .findByUser_UserId(user.getUserId())
+                .orElseThrow(() ->
+                        new walletNotFoundException("Wallet not found"));
 
         return walletMapper.toDTO(wallet);
     }
@@ -39,16 +45,22 @@ public class walletService {
     //Deposit Method.
 
     @Transactional
-    public walletResponseDTO deposit(Long userId, BigDecimal amount) {
+    public walletResponseDTO deposit(BigDecimal amount) {
+
+        userEntity user = authService.getAuthenticatedUser();
 
         walletEntity wallet = walletRepository
-                .findByUser_UserId(userId)
-                .orElseThrow(() -> new RuntimeException("Wallet not found"));
+                .findByUser_UserId(user.getUserId())
+                .orElseThrow(() ->
+                        new walletNotFoundException("Wallet not found"));
 
-        wallet.setBalance(wallet.getBalance().add(amount));
+        wallet.setBalance(
+                wallet.getBalance().add(amount)
+        );
 
         walletRepository.save(wallet);
 
+        // Your existing DEPOSIT transaction creation
         transactionEntity transaction = new transactionEntity();
 
         transaction.setSenderWallet(null);
@@ -64,24 +76,28 @@ public class walletService {
     }
 
     // Withdraw Method
-
     @Transactional
-    public walletResponseDTO withdraw(Long userId, BigDecimal amount) {
+    public walletResponseDTO withdraw(BigDecimal amount) {
+
+        userEntity user = authService.getAuthenticatedUser();
 
         walletEntity wallet = walletRepository
-                .findByUser_UserId(userId)
-                .orElseThrow(() -> new RuntimeException("Wallet not found"));
+                .findByUser_UserId(user.getUserId())
+                .orElseThrow(() ->
+                        new walletNotFoundException("Wallet not found"));
 
         if (wallet.getBalance().compareTo(amount) < 0) {
-            throw new RuntimeException("Insufficient wallet balance");
+            throw new insufficientBalanceException(
+                    "Insufficient wallet balance");
         }
 
-        wallet.setBalance(wallet.getBalance().subtract(amount));
+        wallet.setBalance(
+                wallet.getBalance().subtract(amount)
+        );
 
         walletRepository.save(wallet);
 
-        wallet.setBalance(wallet.getBalance().subtract(amount));
-        walletRepository.save(wallet);
+        // Your existing withdraw transaction creation
 
         transactionEntity transaction = new transactionEntity();
 
@@ -96,5 +112,6 @@ public class walletService {
 
         return walletMapper.toDTO(wallet);
     }
+
 
 }

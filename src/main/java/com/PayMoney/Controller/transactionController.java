@@ -1,7 +1,7 @@
 package com.PayMoney.Controller;
 
-import com.PayMoney.DTO.transactionRequestDTO;
-import com.PayMoney.DTO.transactionResponseDTO;
+import com.PayMoney.DTO.transferRequestDTO;
+import com.PayMoney.DTO.transferResponseDTO;
 import com.PayMoney.Service.transactionService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,21 +16,21 @@ public class transactionController {
     private transactionService transactionService;
 
     @PostMapping("/api/transactions/transfer")
-    public transactionResponseDTO transfer(
-            @Valid @RequestBody transactionRequestDTO request) {
+    public transferResponseDTO transfer(
+            @Valid @RequestBody transferRequestDTO request) {
 
         return transactionService.transfer(request);
     }
 
     @GetMapping("/api/transactions/wallet/{walletId}")
-    public List<transactionResponseDTO> getWalletTransactions(
+    public List<transferResponseDTO> getWalletTransactions(
             @PathVariable Long walletId) {
 
         return transactionService.getWalletTransactions(walletId);
     }
 
     @GetMapping("/api/transactions/{transactionId}")
-    public transactionResponseDTO getTransactionById(
+    public transferResponseDTO getTransactionById(
             @PathVariable Long transactionId) {
 
         return transactionService.getTransactionById(transactionId);

@@ -9,6 +9,6 @@ import java.math.BigDecimal;
 @Data
 public class withdrawRequestDTO {
     @NonNull
-    @DecimalMin(value="0.01")
+    @DecimalMin(value="1.0")
     private BigDecimal amount;
 }
