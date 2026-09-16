@@ -506,12 +506,33 @@ This approach guarantees a strong foundation that supports real-world financial 
 
 ---
 
-<p align="center">
-  <i>Built as a hands-on deep dive into how real-world fintech backends are engineered.</i>
-</p>
+
 <p align="center">
   <i>Built as a hands-on deep dive into how real-world fintech backends are engineered, emphasizing clarity, safety, and extensibility.</i>
 </p>
 
+
+---
+
+## 👨‍💻 Author
+
+**Ayush Sinha**
+
+This project is designed and developed by **Ayush Sinha** as a hands-on
+implementation of a production-oriented fintech backend using Java and Spring Boot.
+
+- GitHub: [VASUSINH](https://github.com/VASUSINH)
+- Project: [PayMoney](https://github.com/VASUSINH/PayMoney)
+
+---
+
+## ©️ Copyright & Usage
+
+**Copyright © 2026 Ayush Sinha. All Rights Reserved.**
+
+For permission or licensing inquiries, please contact the author through
+GitHub.
+
+**All Rights Reserved.**
 ---
 
