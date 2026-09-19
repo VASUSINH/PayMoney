@@ -18,10 +18,9 @@ public class authService {
 
         Authentication authentication =
                 SecurityContextHolder.getContext().getAuthentication();
+        userEntity user = (userEntity) authentication.getPrincipal();
 
-        String authenticatedEmail = authentication.getName();
-
-        return userRepository.findByEmail(authenticatedEmail)
+        return userRepository.findByEmail(user.getEmail())
                 .orElseThrow(() ->
                         new userNotFoundException("User not found"));
     }

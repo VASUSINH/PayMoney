@@ -31,7 +31,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain)
             throws ServletException, IOException {
 
-
         String authHeader = request.getHeader("Authorization");
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -39,26 +38,37 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        String token = authHeader.substring(7);
+        try {
 
-        String email = jwtService.extractEmail(token);
+            String token = authHeader.substring(7);
 
-        userEntity userEntity = userRepository
-                .findByEmail(email)
-                .orElse(null);
+            String email = jwtService.extractEmail(token);
 
-        if (userEntity != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            userEntity userEntity = userRepository
+                    .findByEmail(email)
+                    .orElse(null);
 
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(userEntity,
-                            null,
-                            userEntity.getAuthorities()
-                    );
+            if (userEntity != null
+                    && jwtService.isTokenValid(token, userEntity)
+                    && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-            SecurityContextHolder.getContext()
-                    .setAuthentication(authentication);
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(
+                                userEntity,
+                                null,
+                                userEntity.getAuthorities()
+                        );
+
+                SecurityContextHolder.getContext()
+                        .setAuthentication(authentication);
+            }
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+            SecurityContextHolder.clearContext();
         }
+
         filterChain.doFilter(request, response);
     }
 }
-

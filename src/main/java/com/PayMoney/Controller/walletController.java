@@ -1,8 +1,10 @@
 package com.PayMoney.Controller;
 
 import com.PayMoney.DTO.depositRequestDTO;
+import com.PayMoney.DTO.transferResponseDTO;
 import com.PayMoney.DTO.walletResponseDTO;
 import com.PayMoney.DTO.withdrawRequestDTO;
+import com.PayMoney.Service.transactionService;
 import com.PayMoney.Service.walletService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +17,8 @@ public class walletController {
     @Autowired
     private walletService walletService;
 
-
+  @Autowired
+  private transactionService transactionService;
     @GetMapping("/api/wallet")
     @PreAuthorize("hasRole('USER')")
     public walletResponseDTO getMyWallet() {
@@ -25,19 +28,19 @@ public class walletController {
     //Deposit the Amount.
     @PostMapping("/api/wallet/deposit")
     @PreAuthorize("hasRole('USER')")
-    public walletResponseDTO deposit(
+    public transferResponseDTO deposit(
             @Valid @RequestBody depositRequestDTO request) {
 
-        return walletService.deposit(request.getAmount());
+        return transactionService.deposit(request.getAmount());
     }
 
     //Withdraw the Amount
     @PostMapping("/api/wallet/withdraw")
     @PreAuthorize("hasRole('USER')")
-    public walletResponseDTO withdraw(
+    public transferResponseDTO withdraw(
             @Valid @RequestBody withdrawRequestDTO request) {
 
-        return walletService.withdraw(request.getAmount());
+        return transactionService.withdraw(request.getAmount());
     }
     }
 

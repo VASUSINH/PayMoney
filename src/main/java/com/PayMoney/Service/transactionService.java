@@ -14,6 +14,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -35,9 +36,16 @@ public class transactionService {
     @Transactional
     public transferResponseDTO transfer(transferRequestDTO request) {
 
-        // Get sender wallet
+        // Get sender & receiver wallet
         Long senderId = request.getSenderWalletId();
         Long receiverId = request.getReceiverWalletId();
+
+
+        if (senderId.equals(receiverId)) {
+            throw new invalidTransactionException(
+                    "Cannot transfer to the same wallet");
+        }
+
 
         Long firstId = Math.min(senderId, receiverId);
         Long secondId = Math.max(senderId, receiverId);
@@ -63,11 +71,6 @@ public class transactionService {
         if (!sender.getUser().getUserId().equals(user.getUserId())) {
             throw new invalidTransactionException(
                     "Sender wallet does not belong to authenticated user");
-        }
-
-        // Don't allow transferring to yourself
-        if (sender.getWalletId().equals(receiver.getWalletId())) {
-            throw new invalidTransactionException("Cannot transfer to the same wallet");
         }
 
         // Check sender balance
@@ -160,6 +163,75 @@ public class transactionService {
         }
 
         return transactionMapper.toDTO(transaction);
+    }
+
+    @Transactional
+    public transferResponseDTO deposit(BigDecimal amount) {
+
+        userEntity user = authService.getAuthenticatedUser();
+
+        walletEntity wallet = walletRepository
+                .findByUser_UserId(user.getUserId())
+                .orElseThrow(() ->
+                        new walletNotFoundException("Wallet not found"));
+
+        wallet.setBalance(
+                wallet.getBalance().add(amount)
+        );
+
+        walletRepository.save(wallet);
+
+        transactionEntity transaction = new transactionEntity();
+
+        transaction.setSenderWallet(null);
+        transaction.setReceiverWallet(wallet);
+        transaction.setAmount(amount);
+        transaction.setType(transactionType.DEPOSIT);
+        transaction.setStatus(transactionStatus.SUCCESS);
+        transaction.setCreatedAt(LocalDateTime.now());
+
+        transactionEntity savedTransaction =
+                transactionRepository.save(transaction);
+
+        return transactionMapper.toDTO(savedTransaction);
+    }
+
+
+    // Withdraw Method
+    @Transactional
+    public transferResponseDTO withdraw(BigDecimal amount) {
+
+        userEntity user = authService.getAuthenticatedUser();
+
+        walletEntity wallet = walletRepository
+                .findByUser_UserId(user.getUserId())
+                .orElseThrow(() ->
+                        new walletNotFoundException("Wallet not found"));
+
+        if (wallet.getBalance().compareTo(amount) < 0) {
+            throw new insufficientBalanceException(
+                    "Insufficient wallet balance");
+        }
+
+        wallet.setBalance(
+                wallet.getBalance().subtract(amount)
+        );
+
+        walletRepository.save(wallet);
+
+        transactionEntity transaction = new transactionEntity();
+
+        transaction.setSenderWallet(wallet);
+        transaction.setReceiverWallet(null);
+        transaction.setAmount(amount);
+        transaction.setType(transactionType.WITHDRAW);
+        transaction.setStatus(transactionStatus.SUCCESS);
+        transaction.setCreatedAt(LocalDateTime.now());
+
+        transactionEntity savedTransaction =
+                transactionRepository.save(transaction);
+
+        return transactionMapper.toDTO(savedTransaction);
     }
 
 }
