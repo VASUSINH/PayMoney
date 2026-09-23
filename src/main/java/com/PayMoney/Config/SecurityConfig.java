@@ -31,7 +31,12 @@ public class SecurityConfig {
                     .addFilterBefore(jwtAuthenticationFilter,
                             UsernamePasswordAuthenticationFilter.class)
                     .authorizeHttpRequests(auth -> auth
-                            .requestMatchers("/api/addusers","/api/login").permitAll()
+                            .requestMatchers(
+                                    "/api/addusers",
+                                    "/api/login",
+                                    "/payment.html",
+                                    "/paymoney-logo.png"
+                            ).permitAll()
                             .anyRequest().authenticated()
                     );
 

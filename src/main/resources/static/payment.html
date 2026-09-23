@@ -1,0 +1,3045 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>PayMoney - Digital Wallet</title>
+
+
+    <link rel="icon" type="image/png" href="/paymoney-logo.png">
+
+    <!-- Razorpay Checkout -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+
+    <style>
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+
+        body {
+
+            min-height: 100vh;
+
+            background:
+                    radial-gradient(
+                            circle at 10% 10%,
+                            #2563eb,
+                            transparent 25%
+                    ),
+                    radial-gradient(
+                            circle at 90% 90%,
+                            #7c3aed,
+                            transparent 25%
+                    ),
+                    #0f172a;
+
+            color: white;
+        }
+
+
+        button {
+            cursor: pointer;
+        }
+
+
+        /* =================================================
+           AUTH
+           ================================================= */
+
+        #authContainer {
+
+            min-height: 100vh;
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: center;
+        }
+
+
+        .auth-card {
+
+            width: 400px;
+
+            padding: 35px;
+
+            background:
+                    rgba(255,255,255,0.10);
+
+            backdrop-filter: blur(20px);
+
+            border:
+                    1px solid
+                    rgba(255,255,255,0.15);
+
+            border-radius: 24px;
+
+            box-shadow:
+                    0 25px 60px
+                    rgba(0,0,0,0.4);
+
+            animation: appear 0.6s ease;
+        }
+
+
+        .logo {
+
+            font-size: 30px;
+
+            font-weight: bold;
+
+            text-align: center;
+
+            margin-bottom: 8px;
+        }
+
+
+        .logo span {
+            color: #38bdf8;
+        }
+
+
+        .subtitle {
+
+            text-align: center;
+
+            color: #94a3b8;
+
+            font-size: 14px;
+
+            margin-bottom: 28px;
+        }
+
+
+        .label {
+
+            display: block;
+
+            color: #cbd5e1;
+
+            font-size: 13px;
+
+            margin-bottom: 7px;
+        }
+
+
+        input {
+
+            width: 100%;
+
+            padding: 14px;
+
+            margin-bottom: 16px;
+
+            border:
+                    1px solid
+                    rgba(255,255,255,0.15);
+
+            border-radius: 12px;
+
+            outline: none;
+
+            background:
+                    rgba(255,255,255,0.07);
+
+            color: white;
+
+            font-size: 14px;
+        }
+
+
+        input:focus {
+
+            border-color: #38bdf8;
+
+            box-shadow:
+                    0 0 0 3px
+                    rgba(56,189,248,0.12);
+        }
+
+
+        input::placeholder {
+            color: #64748b;
+        }
+
+
+        .primary-button {
+
+            width: 100%;
+
+            padding: 14px;
+
+            border: none;
+
+            border-radius: 12px;
+
+            background:
+                    linear-gradient(
+                            135deg,
+                            #38bdf8,
+                            #6366f1
+                    );
+
+            color: white;
+
+            font-weight: bold;
+
+            font-size: 14px;
+
+            transition: 0.25s;
+        }
+
+
+        .primary-button:hover {
+
+            transform: translateY(-2px);
+
+            box-shadow:
+                    0 12px 25px
+                    rgba(59,130,246,0.4);
+        }
+
+
+        .primary-button:disabled {
+
+            opacity: 0.6;
+
+            cursor: not-allowed;
+
+            transform: none;
+        }
+
+
+        .switch {
+
+            text-align: center;
+
+            margin-top: 18px;
+
+            color: #94a3b8;
+
+            font-size: 13px;
+        }
+
+
+        .switch span {
+
+            color: #38bdf8;
+
+            cursor: pointer;
+
+            font-weight: bold;
+        }
+
+
+        .status {
+
+            text-align: center;
+
+            min-height: 20px;
+
+            margin-top: 14px;
+
+            font-size: 13px;
+        }
+
+
+        .success {
+            color: #4ade80;
+        }
+
+
+        .error {
+            color: #f87171;
+        }
+
+
+        /* =================================================
+           APPLICATION
+           ================================================= */
+
+        #app {
+            display: none;
+        }
+
+
+        .sidebar {
+
+            position: fixed;
+
+            left: 0;
+            top: 0;
+            bottom: 0;
+
+            width: 240px;
+
+            padding: 25px 18px;
+
+            background:
+                    rgba(15,23,42,0.92);
+
+            border-right:
+                    1px solid
+                    rgba(255,255,255,0.08);
+
+            backdrop-filter: blur(20px);
+
+            z-index: 10;
+        }
+
+
+        .sidebar-logo {
+
+            font-size: 25px;
+
+            font-weight: bold;
+
+            margin-bottom: 40px;
+
+            padding-left: 10px;
+        }
+
+
+        .sidebar-logo span {
+            color: #38bdf8;
+        }
+
+
+        .nav-item {
+
+            width: 100%;
+
+            padding: 13px 14px;
+
+            margin-bottom: 7px;
+
+            border: none;
+
+            border-radius: 10px;
+
+            background: transparent;
+
+            color: #94a3b8;
+
+            text-align: left;
+
+            font-size: 14px;
+
+            transition: 0.2s;
+        }
+
+
+        .nav-item:hover,
+        .nav-item.active {
+
+            background:
+                    rgba(56,189,248,0.12);
+
+            color: white;
+        }
+
+
+        .logout-button {
+
+            position: absolute;
+
+            left: 18px;
+            right: 18px;
+            bottom: 25px;
+
+            padding: 12px;
+
+            border:
+                    1px solid
+                    rgba(248,113,113,0.2);
+
+            border-radius: 10px;
+
+            background:
+                    rgba(248,113,113,0.08);
+
+            color: #f87171;
+
+            font-weight: bold;
+        }
+
+
+        .main {
+
+            margin-left: 240px;
+
+            padding: 30px;
+
+            min-height: 100vh;
+        }
+
+
+        .topbar {
+
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+
+            margin-bottom: 30px;
+        }
+
+
+        .welcome h2 {
+            margin-bottom: 5px;
+        }
+
+
+        .welcome p {
+
+            color: #94a3b8;
+
+            font-size: 13px;
+        }
+
+
+        .profile-circle {
+
+            width: 42px;
+            height: 42px;
+
+            border-radius: 50%;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            background:
+                    linear-gradient(
+                            135deg,
+                            #38bdf8,
+                            #6366f1
+                    );
+
+            font-weight: bold;
+        }
+
+
+        /* =================================================
+           SCREENS
+           ================================================= */
+
+        .screen {
+            display: none;
+        }
+
+
+        .screen.active {
+
+            display: block;
+
+            animation:
+                    screenAppear 0.3s ease;
+        }
+
+
+        @keyframes screenAppear {
+
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+
+        /* =================================================
+           DASHBOARD
+           ================================================= */
+
+        .balance-card {
+
+            padding: 30px;
+
+            border-radius: 20px;
+
+            background:
+                    linear-gradient(
+                            135deg,
+                            #2563eb,
+                            #6366f1
+                    );
+
+            box-shadow:
+                    0 20px 40px
+                    rgba(37,99,235,0.25);
+
+            margin-bottom: 22px;
+        }
+
+
+        .balance-label {
+
+            color: #dbeafe;
+
+            font-size: 13px;
+        }
+
+
+        .balance {
+
+            font-size: 38px;
+
+            font-weight: bold;
+
+            margin: 10px 0 22px;
+        }
+
+
+        .balance-actions {
+
+            display: flex;
+
+            gap: 10px;
+        }
+
+
+        .small-button {
+
+            padding: 10px 16px;
+
+            border: none;
+
+            border-radius: 10px;
+
+            background:
+                    rgba(255,255,255,0.18);
+
+            color: white;
+
+            font-weight: bold;
+        }
+
+
+        .small-button:hover {
+            background:
+                    rgba(255,255,255,0.28);
+        }
+
+
+        .cards {
+
+            display: grid;
+
+            grid-template-columns:
+                    repeat(3, 1fr);
+
+            gap: 15px;
+
+            margin-bottom: 25px;
+        }
+
+
+        .action-card {
+
+            padding: 22px;
+
+            border-radius: 16px;
+
+            background:
+                    rgba(255,255,255,0.07);
+
+            border:
+                    1px solid
+                    rgba(255,255,255,0.08);
+
+            cursor: pointer;
+
+            transition: 0.25s;
+        }
+
+
+        .action-card:hover {
+
+            transform:
+                    translateY(-4px);
+
+            background:
+                    rgba(255,255,255,0.11);
+        }
+
+
+        .action-icon {
+
+            font-size: 25px;
+
+            margin-bottom: 12px;
+        }
+
+
+        .action-card p {
+
+            color: #94a3b8;
+
+            font-size: 12px;
+
+            margin-top: 5px;
+        }
+
+
+        /* =================================================
+           PANELS
+           ================================================= */
+
+        .panel {
+
+            padding: 25px;
+
+            background:
+                    rgba(255,255,255,0.06);
+
+            border:
+                    1px solid
+                    rgba(255,255,255,0.08);
+
+            border-radius: 18px;
+
+            margin-bottom: 20px;
+        }
+
+
+        .panel h3 {
+            margin-bottom: 20px;
+        }
+
+
+        .form-container {
+            max-width: 520px;
+        }
+
+
+        .secondary-button {
+
+            width: 100%;
+
+            padding: 13px;
+
+            border:
+                    1px solid
+                    rgba(255,255,255,0.12);
+
+            border-radius: 10px;
+
+            background:
+                    rgba(255,255,255,0.06);
+
+            color: white;
+
+            font-weight: bold;
+
+            margin-top: 10px;
+        }
+
+
+        /* =================================================
+           TRANSACTIONS
+           ================================================= */
+
+        .transaction {
+
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+
+            padding: 15px 0;
+
+            border-bottom:
+                    1px solid
+                    rgba(255,255,255,0.07);
+        }
+
+
+        .transaction:last-child {
+            border-bottom: none;
+        }
+
+
+        .transaction-type {
+
+            font-weight: bold;
+
+            font-size: 14px;
+        }
+
+
+        .transaction-date {
+
+            color: #64748b;
+
+            font-size: 11px;
+
+            margin-top: 4px;
+        }
+
+
+        .transaction-amount {
+            font-weight: bold;
+        }
+
+
+        .positive {
+            color: #4ade80;
+        }
+
+
+        .negative {
+            color: #f87171;
+        }
+
+
+        .empty {
+
+            text-align: center;
+
+            color: #64748b;
+
+            padding: 30px;
+        }
+
+
+        /* =================================================
+           SUPPORT
+           ================================================= */
+
+        .support-item {
+
+            padding: 18px;
+
+            margin-bottom: 12px;
+
+            border-radius: 12px;
+
+            background:
+                    rgba(255,255,255,0.05);
+        }
+
+
+        .support-item h4 {
+            margin-bottom: 6px;
+        }
+
+
+        .support-item p {
+
+            color: #94a3b8;
+
+            font-size: 13px;
+
+            line-height: 1.5;
+        }
+
+
+        /* =================================================
+           LOADER
+           ================================================= */
+
+        .loader {
+
+            display: inline-block;
+
+            width: 15px;
+            height: 15px;
+
+            border:
+                    2px solid
+                    rgba(255,255,255,0.3);
+
+            border-top-color: white;
+
+            border-radius: 50%;
+
+            animation:
+                    spin 0.8s linear infinite;
+
+            vertical-align: middle;
+
+            margin-right: 6px;
+        }
+
+
+        @keyframes spin {
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+
+        @keyframes appear {
+
+            from {
+
+                opacity: 0;
+
+                transform:
+                        translateY(30px)
+                        scale(0.95);
+            }
+
+            to {
+
+                opacity: 1;
+
+                transform:
+                        translateY(0)
+                        scale(1);
+            }
+        }
+
+
+        /* =================================================
+           RESPONSIVE
+           ================================================= */
+
+        @media (max-width: 800px) {
+
+            .sidebar {
+
+                width: 70px;
+
+                padding:
+                        20px 10px;
+            }
+
+
+            .sidebar-logo {
+
+                font-size: 0;
+            }
+
+
+            .sidebar-logo span {
+
+                font-size: 22px;
+            }
+
+
+            .nav-item {
+
+                font-size: 0;
+
+                text-align: center;
+            }
+
+
+            .logout-button {
+
+                font-size: 0;
+            }
+
+
+            .main {
+
+                margin-left: 70px;
+
+                padding: 20px;
+            }
+
+
+            .cards {
+
+                grid-template-columns: 1fr;
+            }
+        }
+
+
+        @media (max-width: 500px) {
+
+            .auth-card {
+                width: 92%;
+            }
+
+
+            .main {
+                padding: 15px;
+            }
+
+
+            .balance {
+                font-size: 30px;
+            }
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<!-- =====================================================
+     LOGIN / REGISTER
+     ===================================================== -->
+
+<div id="authContainer">
+
+    <div class="auth-card">
+
+
+        <!-- LOGIN -->
+
+        <div id="loginScreen">
+
+            <h1 class="logo">
+                Pay<span>Money</span>
+            </h1>
+
+
+            <p class="subtitle">
+                Secure Digital Wallet
+            </p>
+
+
+            <label class="label">
+                Email
+            </label>
+
+
+            <input
+                    type="email"
+                    id="loginEmail"
+                    placeholder="Enter your email"
+            >
+
+
+            <label class="label">
+                Password
+            </label>
+
+
+            <input
+                    type="password"
+                    id="loginPassword"
+                    placeholder="Enter your password"
+            >
+
+
+            <button
+                    class="primary-button"
+                    id="loginButton"
+                    onclick="login()">
+
+                Login
+
+            </button>
+
+
+            <div
+                    id="loginStatus"
+                    class="status">
+            </div>
+
+
+            <div class="switch">
+
+                Don't have an account?
+
+                <span onclick="showRegister()">
+                    Register
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <!-- REGISTER -->
+
+        <div
+                id="registerScreen"
+                style="display:none;">
+
+            <h1 class="logo">
+                Pay<span>Money</span>
+            </h1>
+
+
+            <p class="subtitle">
+                Create your wallet account
+            </p>
+
+
+            <label class="label">
+                Name
+            </label>
+
+
+            <input
+                    type="text"
+                    id="registerName"
+                    placeholder="Your name"
+            >
+
+
+            <label class="label">
+                Email
+            </label>
+
+
+            <input
+                    type="email"
+                    id="registerEmail"
+                    placeholder="Your email"
+            >
+
+
+            <label class="label">
+                Password
+            </label>
+
+
+            <input
+                    type="password"
+                    id="registerPassword"
+                    placeholder="Minimum 8 characters"
+            >
+
+
+            <button
+                    class="primary-button"
+                    onclick="registerUser()">
+
+                Create Account
+
+            </button>
+
+
+            <div
+                    id="registerStatus"
+                    class="status">
+            </div>
+
+
+            <div class="switch">
+
+                Already have an account?
+
+                <span onclick="showLogin()">
+                    Login
+                </span>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =====================================================
+     APPLICATION
+     ===================================================== -->
+
+<div id="app">
+
+
+    <!-- SIDEBAR -->
+
+    <aside class="sidebar">
+
+
+        <div class="sidebar-logo">
+
+            Pay<span>Money</span>
+
+        </div>
+
+
+        <button
+                class="nav-item active"
+                onclick="showScreen('dashboard', this)">
+
+            🏠 Dashboard
+
+        </button>
+
+
+        <button
+                class="nav-item"
+                onclick="showScreen('wallet', this)">
+
+            💰 Wallet
+
+        </button>
+
+
+        <button
+                class="nav-item"
+                onclick="showScreen('transfer', this)">
+
+            ↗ Send Money
+
+        </button>
+
+
+        <button
+                class="nav-item"
+                onclick="showScreen('transactions', this)">
+
+            ↕ Transactions
+
+        </button>
+
+
+        <button
+                class="nav-item"
+                onclick="showScreen('profile', this)">
+
+            👤 Profile
+
+        </button>
+
+
+        <button
+                class="nav-item"
+                onclick="showScreen('support', this)">
+
+            ❓ Support
+
+        </button>
+
+
+        <button
+                class="logout-button"
+                onclick="logout()">
+
+            🚪 Logout
+
+        </button>
+
+    </aside>
+
+
+    <!-- MAIN -->
+
+    <main class="main">
+
+
+        <!-- TOP BAR -->
+
+        <div class="topbar">
+
+            <div class="welcome">
+
+                <h2 id="pageTitle">
+                    Dashboard
+                </h2>
+
+                <p id="pageSubtitle">
+                    Manage your digital wallet
+                </p>
+
+            </div>
+
+
+            <div
+                    class="profile-circle"
+                    id="profileCircle">
+
+                U
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             DASHBOARD
+             ================================================= -->
+
+        <section
+                id="dashboard"
+                class="screen active">
+
+
+            <div class="balance-card">
+
+                <div class="balance-label">
+                    Available Balance
+                </div>
+
+
+                <div
+                        class="balance"
+                        id="dashboardBalance">
+
+                    ₹0.00
+
+                </div>
+
+
+                <div class="balance-actions">
+
+                    <button
+                            class="small-button"
+                            onclick="showWallet()">
+
+                        + Add Money
+
+                    </button>
+
+
+                    <button
+                            class="small-button"
+                            onclick="showWithdraw()">
+
+                        Withdraw
+
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <div class="cards">
+
+
+                <div
+                        class="action-card"
+                        onclick="showWallet()">
+
+                    <div class="action-icon">
+                        💰
+                    </div>
+
+                    <strong>
+                        Wallet
+                    </strong>
+
+                    <p>
+                        Manage your balance
+                    </p>
+
+                </div>
+
+
+                <div
+                        class="action-card"
+                        onclick="showTransfer()">
+
+                    <div class="action-icon">
+                        ↗
+                    </div>
+
+                    <strong>
+                        Send Money
+                    </strong>
+
+                    <p>
+                        Transfer funds securely
+                    </p>
+
+                </div>
+
+
+                <div
+                        class="action-card"
+                        onclick="showTransactions()">
+
+                    <div class="action-icon">
+                        ↕
+                    </div>
+
+                    <strong>
+                        Transactions
+                    </strong>
+
+                    <p>
+                        View transaction history
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="panel">
+
+                <h3>
+                    Recent Transactions
+                </h3>
+
+
+                <div id="recentTransactions">
+
+                    <div class="empty">
+                        Loading...
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             WALLET
+             ================================================= -->
+
+        <section
+                id="wallet"
+                class="screen">
+
+
+            <div class="panel">
+
+                <h3>
+                    Wallet Balance
+                </h3>
+
+
+                <div
+                        class="balance"
+                        id="walletBalance">
+
+                    ₹0.00
+
+                </div>
+
+            </div>
+
+
+            <!-- ADD MONEY -->
+
+            <div class="panel form-container">
+
+                <h3>
+                    Add Money
+                </h3>
+
+
+                <label class="label">
+                    Amount
+                </label>
+
+
+                <input
+                        type="number"
+                        id="addMoneyAmount"
+                        placeholder="Enter amount"
+                        min="1"
+                >
+
+
+                <button
+                        class="primary-button"
+                        onclick="addMoney()">
+
+                    Add Money with Razorpay
+
+                </button>
+
+
+                <div
+                        id="addMoneyStatus"
+                        class="status">
+                </div>
+
+            </div>
+
+
+            <!-- WITHDRAW -->
+
+            <div class="panel form-container">
+
+                <h3>
+                    Withdraw Money
+                </h3>
+
+
+                <label class="label">
+                    Amount
+                </label>
+
+
+                <input
+                        type="number"
+                        id="withdrawAmount"
+                        placeholder="Enter amount"
+                        min="1"
+                >
+
+
+                <button
+                        class="primary-button"
+                        onclick="withdrawMoney()">
+
+                    Withdraw
+
+                </button>
+
+
+                <div
+                        id="withdrawStatus"
+                        class="status">
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             SEND MONEY
+             ================================================= -->
+
+        <section
+                id="transfer"
+                class="screen">
+
+
+            <div class="panel form-container">
+
+                <h3>
+                    Send Money
+                </h3>
+
+
+                <label class="label">
+                    Receiver Wallet ID
+                </label>
+
+
+                <input
+                        type="number"
+                        id="receiverWalletId"
+                        placeholder="Enter receiver wallet ID"
+                >
+
+
+                <label class="label">
+                    Amount
+                </label>
+
+
+                <input
+                        type="number"
+                        id="transferAmount"
+                        placeholder="Enter amount"
+                        min="1"
+                >
+
+
+                <button
+                        class="primary-button"
+                        onclick="transferMoney()">
+
+                    Send Money
+
+                </button>
+
+
+                <div
+                        id="transferStatus"
+                        class="status">
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             TRANSACTIONS
+             ================================================= -->
+
+        <section
+                id="transactions"
+                class="screen">
+
+
+            <div class="panel">
+
+                <h3>
+                    Transaction History
+                </h3>
+
+
+                <div id="transactionsList">
+
+                    <div class="empty">
+                        Loading transactions...
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             PROFILE
+             ================================================= -->
+
+        <section
+                id="profile"
+                class="screen">
+
+
+            <div class="panel form-container">
+
+                <h3>
+                    My Profile
+                </h3>
+
+
+                <label class="label">
+                    Email
+                </label>
+
+
+                <input
+                        id="profileEmail"
+                        readonly
+                >
+
+
+                <label class="label">
+                    Role
+                </label>
+
+
+                <input
+                        id="profileRole"
+                        readonly
+                >
+
+
+                <p
+                        style="
+                        color:#94a3b8;
+                        font-size:12px;
+                        margin-top:5px;
+                        ">
+
+                    Account information from
+                    your authenticated session.
+
+                </p>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             SUPPORT
+             ================================================= -->
+
+        <section
+                id="support"
+                class="screen">
+
+
+            <div class="panel">
+
+                <h3>
+                    Support
+                </h3>
+
+
+                <div class="support-item">
+
+                    <h4>
+                        💳 Payment Issue
+                    </h4>
+
+                    <p>
+                        If your payment was completed but
+                        your wallet was not updated, check
+                        your transaction history and payment
+                        status.
+                    </p>
+
+                </div>
+
+
+                <div class="support-item">
+
+                    <h4>
+                        💰 Wallet Issue
+                    </h4>
+
+                    <p>
+                        Check your wallet balance and recent
+                        transactions before trying the
+                        operation again.
+                    </p>
+
+                </div>
+
+
+                <div class="support-item">
+
+                    <h4>
+                        🔐 Login & Account
+                    </h4>
+
+                    <p>
+                        Use the email and password associated
+                        with your PayMoney account.
+                    </p>
+
+                </div>
+
+
+                <div class="support-item">
+
+                    <h4>
+                        📧 Project Support
+                    </h4>
+
+                    <p>
+                        This section represents the support
+                        interface of the PayMoney application.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+    </main>
+
+</div>
+
+
+<script>
+
+
+    /* =========================================================
+       API CONFIGURATION
+       ========================================================= */
+
+    const API = {
+
+        login:
+            "/api/login",
+
+        register:
+            "/api/addusers",
+
+        wallet:
+            "/api/wallet",
+
+        withdraw:
+            "/api/wallet/withdraw",
+
+        transfer:
+            "/api/transactions/transfer",
+
+        transactions:
+            "/api/transactions/wallet"
+
+    };
+
+
+    /* =========================================================
+       TOKEN
+       ========================================================= */
+
+    function getToken() {
+
+        return localStorage.getItem("token");
+
+    }
+
+
+    function authHeaders() {
+
+        return {
+
+            "Content-Type":
+                "application/json",
+
+            "Authorization":
+                "Bearer " + getToken()
+
+        };
+
+    }
+
+
+    /* =========================================================
+       LOGIN / REGISTER UI
+       ========================================================= */
+
+    function showRegister() {
+
+        document.getElementById(
+            "loginScreen"
+        ).style.display = "none";
+
+
+        document.getElementById(
+            "registerScreen"
+        ).style.display = "block";
+
+    }
+
+
+    function showLogin() {
+
+        document.getElementById(
+            "registerScreen"
+        ).style.display = "none";
+
+
+        document.getElementById(
+            "loginScreen"
+        ).style.display = "block";
+
+    }
+
+
+    /* =========================================================
+       REGISTER
+       ========================================================= */
+
+    async function registerUser() {
+
+        const name =
+            document.getElementById(
+                "registerName"
+            ).value.trim();
+
+
+        const email =
+            document.getElementById(
+                "registerEmail"
+            ).value.trim();
+
+
+        const password =
+            document.getElementById(
+                "registerPassword"
+            ).value;
+
+
+        const status =
+            document.getElementById(
+                "registerStatus"
+            );
+
+
+        if (!name || !email || !password) {
+
+            status.innerHTML =
+                '<span class="error">' +
+                'Please fill all fields.' +
+                '</span>';
+
+            return;
+        }
+
+
+        if (password.length < 8) {
+
+            status.innerHTML =
+                '<span class="error">' +
+                'Password must contain at least 8 characters.' +
+                '</span>';
+
+            return;
+        }
+
+
+        try {
+
+            const response =
+                await fetch(
+                    API.register,
+                    {
+
+                        method: "POST",
+
+                        headers: {
+
+                            "Content-Type":
+                                "application/json"
+
+                        },
+
+                        body:
+                            JSON.stringify({
+
+                                name:
+                                name,
+
+                                email:
+                                email,
+
+                                password:
+                                password
+
+                            })
+                    }
+                );
+
+
+            if (!response.ok) {
+
+                const message =
+                    await response.text();
+
+                throw new Error(
+                    message ||
+                    "Registration failed"
+                );
+            }
+
+
+            status.innerHTML =
+                '<span class="success">' +
+                'Account created successfully.' +
+                '</span>';
+
+
+            setTimeout(
+                () => {
+
+                    showLogin();
+
+                    document.getElementById(
+                        "loginEmail"
+                    ).value = email;
+
+                },
+                1000
+            );
+
+
+        } catch (error) {
+
+            status.innerHTML =
+                '<span class="error">' +
+                error.message +
+                '</span>';
+
+        }
+
+    }
+
+
+    /* =========================================================
+       LOGIN
+       ========================================================= */
+
+    async function login() {
+
+        const email =
+            document.getElementById(
+                "loginEmail"
+            ).value.trim();
+
+
+        const password =
+            document.getElementById(
+                "loginPassword"
+            ).value;
+
+
+        const status =
+            document.getElementById(
+                "loginStatus"
+            );
+
+
+        if (!email || !password) {
+
+            status.innerHTML =
+                '<span class="error">' +
+                'Enter email and password.' +
+                '</span>';
+
+            return;
+        }
+
+
+        try {
+
+            const response =
+                await fetch(
+                    API.login,
+                    {
+
+                        method: "POST",
+
+                        headers: {
+
+                            "Content-Type":
+                                "application/json"
+
+                        },
+
+                        body:
+                            JSON.stringify({
+
+                                email:
+                                email,
+
+                                password:
+                                password
+
+                            })
+                    }
+                );
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "Invalid email or password"
+                );
+            }
+
+
+            const data =
+                await response.json();
+
+
+            /*
+             * loginResponseDTO contains:
+             *
+             * private String token;
+             */
+
+            localStorage.setItem(
+                "token",
+                data.token
+            );
+
+
+            showApp();
+
+
+        } catch (error) {
+
+            status.innerHTML =
+                '<span class="error">' +
+                error.message +
+                '</span>';
+
+        }
+
+    }
+
+
+    /* =========================================================
+       SHOW APPLICATION
+       ========================================================= */
+
+    function showApp() {
+
+        document.getElementById(
+            "authContainer"
+        ).style.display = "none";
+
+
+        document.getElementById(
+            "app"
+        ).style.display = "block";
+
+
+        loadProfile();
+
+        loadWallet();
+
+    }
+
+
+    /* =========================================================
+       NAVIGATION
+       ========================================================= */
+
+    function showScreen(
+        screenName,
+        element
+    ) {
+
+        document
+            .querySelectorAll(".screen")
+            .forEach(
+                screen => {
+
+                    screen.classList.remove(
+                        "active"
+                    );
+
+                }
+            );
+
+
+        document
+            .querySelectorAll(".nav-item")
+            .forEach(
+                item => {
+
+                    item.classList.remove(
+                        "active"
+                    );
+
+                }
+            );
+
+
+        document.getElementById(
+            screenName
+        ).classList.add("active");
+
+
+        if (element) {
+
+            element.classList.add("active");
+
+        }
+
+
+        const titles = {
+
+            dashboard:
+                "Dashboard",
+
+            wallet:
+                "Wallet",
+
+            transfer:
+                "Send Money",
+
+            transactions:
+                "Transactions",
+
+            profile:
+                "Profile",
+
+            support:
+                "Support"
+
+        };
+
+
+        const subtitles = {
+
+            dashboard:
+                "Manage your digital wallet",
+
+            wallet:
+                "Manage your wallet",
+
+            transfer:
+                "Transfer money securely",
+
+            transactions:
+                "View transaction history",
+
+            profile:
+                "Manage your account",
+
+            support:
+                "PayMoney help center"
+
+        };
+
+
+        document.getElementById(
+            "pageTitle"
+        ).innerText =
+            titles[screenName];
+
+
+        document.getElementById(
+            "pageSubtitle"
+        ).innerText =
+            subtitles[screenName];
+
+
+        if (screenName === "transactions") {
+
+            loadTransactions();
+
+        }
+
+    }
+
+
+    function showWallet() {
+
+        const button =
+            document.querySelectorAll(
+                ".nav-item"
+            )[1];
+
+        showScreen(
+            "wallet",
+            button
+        );
+
+    }
+
+
+    function showTransfer() {
+
+        const button =
+            document.querySelectorAll(
+                ".nav-item"
+            )[2];
+
+        showScreen(
+            "transfer",
+            button
+        );
+
+    }
+
+
+    function showTransactions() {
+
+        const button =
+            document.querySelectorAll(
+                ".nav-item"
+            )[3];
+
+        showScreen(
+            "transactions",
+            button
+        );
+
+    }
+
+
+    function showWithdraw() {
+
+        showWallet();
+
+        setTimeout(
+            () => {
+
+                document
+                    .getElementById(
+                        "withdrawAmount"
+                    )
+                    .focus();
+
+            },
+            100
+        );
+
+    }
+
+
+    /* =========================================================
+       WALLET
+       ========================================================= */
+
+    async function loadWallet() {
+
+        try {
+
+            const response =
+                await fetch(
+                    API.wallet,
+                    {
+
+                        headers:
+                            authHeaders()
+
+                    }
+                );
+
+
+            if (response.status === 401) {
+
+                logout();
+
+                return;
+            }
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "Unable to load wallet"
+                );
+            }
+
+
+            const wallet =
+                await response.json();
+
+
+            const balance =
+                Number(
+                    wallet.balance || 0
+                );
+
+
+            document.getElementById(
+                "dashboardBalance"
+            ).innerText =
+                "₹" +
+                balance.toFixed(2);
+
+
+            document.getElementById(
+                "walletBalance"
+            ).innerText =
+                "₹" +
+                balance.toFixed(2);
+
+
+            /*
+             * Store wallet ID for transfers
+             * and transaction history.
+             */
+
+            localStorage.setItem(
+                "walletId",
+                wallet.walletId
+            );
+
+
+            loadTransactions();
+
+        } catch (error) {
+
+            console.error(error);
+
+        }
+
+    }
+
+
+    /* =========================================================
+       ADD MONEY
+       RAZORPAY
+       ========================================================= */
+
+    async function addMoney() {
+
+        const amount =
+            document.getElementById(
+                "addMoneyAmount"
+            ).value;
+
+
+        const status =
+            document.getElementById(
+                "addMoneyStatus"
+            );
+
+
+        if (!amount || amount < 1) {
+
+            status.innerHTML =
+                '<span class="error">' +
+                'Enter an amount of at least ₹1.' +
+                '</span>';
+
+            return;
+        }
+
+
+        try {
+
+            const response =
+                await fetch(
+                    "/api/payments/create-order",
+                    {
+
+                        method: "POST",
+
+                        headers:
+                            authHeaders(),
+
+                        body:
+                            JSON.stringify({
+
+                                amount:
+                                amount
+
+                            })
+                    }
+                );
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "Unable to create payment order"
+                );
+            }
+
+
+            const order =
+                await response.json();
+
+
+            const options = {
+
+                /*
+                 * ONLY Razorpay Key ID.
+                 * Never put Key Secret here.
+                 */
+
+                key:
+                    "rzp_test_TdxakRD4r7EGTJ",
+
+                amount:
+                    order.amount * 100,
+
+                currency:
+                order.currency,
+
+                name:
+                    "PayMoney",
+
+                description:
+                    "Add Money to Wallet",
+
+                order_id:
+                order.orderId,
+
+
+                handler:
+                    async function(response) {
+
+                        await verifyPayment(
+                            response
+                        );
+
+                    },
+
+
+                theme: {
+
+                    color:
+                        "#6366f1"
+
+                }
+
+            };
+
+
+            const razorpay =
+                new Razorpay(options);
+
+
+            razorpay.on(
+                "payment.failed",
+                function() {
+
+                    status.innerHTML =
+                        '<span class="error">' +
+                        'Payment failed. Please try again.' +
+                        '</span>';
+
+                }
+            );
+
+
+            razorpay.open();
+
+
+        } catch (error) {
+
+            status.innerHTML =
+                '<span class="error">' +
+                error.message +
+                '</span>';
+
+        }
+
+    }
+
+
+    /* =========================================================
+       VERIFY PAYMENT
+       ========================================================= */
+
+    async function verifyPayment(
+        response
+    ) {
+
+        const status =
+            document.getElementById(
+                "addMoneyStatus"
+            );
+
+
+        status.innerHTML =
+            '<span class="success">' +
+            'Verifying payment...' +
+            '</span>';
+
+
+        try {
+
+            const result =
+                await fetch(
+                    "/api/payments/verify",
+                    {
+
+                        method: "POST",
+
+                        headers:
+                            authHeaders(),
+
+                        body:
+                            JSON.stringify({
+
+                                razorpayPaymentId:
+                                response.razorpay_payment_id,
+
+                                razorpayOrderId:
+                                response.razorpay_order_id,
+
+                                razorpaySignature:
+                                response.razorpay_signature
+
+                            })
+                    }
+                );
+
+
+            const message =
+                await result.text();
+
+
+            if (!result.ok) {
+
+                throw new Error(
+                    message
+                );
+
+            }
+
+
+            status.innerHTML =
+                '<span class="success">' +
+                '✓ Payment successful. Wallet credited.' +
+                '</span>';
+
+
+            document.getElementById(
+                "addMoneyAmount"
+            ).value = "";
+
+
+            loadWallet();
+
+
+        } catch (error) {
+
+            status.innerHTML =
+                '<span class="error">' +
+                error.message +
+                '</span>';
+
+        }
+
+    }
+
+
+    /* =========================================================
+       WITHDRAW
+       ========================================================= */
+
+    async function withdrawMoney() {
+
+        const amount =
+            document.getElementById(
+                "withdrawAmount"
+            ).value;
+
+
+        const status =
+            document.getElementById(
+                "withdrawStatus"
+            );
+
+
+        if (!amount || amount < 1) {
+
+            status.innerHTML =
+                '<span class="error">' +
+                'Enter a valid amount.' +
+                '</span>';
+
+            return;
+        }
+
+
+        try {
+
+            const response =
+                await fetch(
+                    API.withdraw,
+                    {
+
+                        method: "POST",
+
+                        headers:
+                            authHeaders(),
+
+                        body:
+                            JSON.stringify({
+
+                                amount:
+                                amount
+
+                            })
+                    }
+                );
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    await response.text()
+                    || "Withdrawal failed"
+                );
+            }
+
+
+            status.innerHTML =
+                '<span class="success">' +
+                '✓ Withdrawal successful.' +
+                '</span>';
+
+
+            document.getElementById(
+                "withdrawAmount"
+            ).value = "";
+
+
+            loadWallet();
+
+
+        } catch (error) {
+
+            status.innerHTML =
+                '<span class="error">' +
+                error.message +
+                '</span>';
+
+        }
+
+    }
+
+
+    /* =========================================================
+       TRANSFER
+       ========================================================= */
+
+    async function transferMoney() {
+
+        const receiverWalletId =
+            document.getElementById(
+                "receiverWalletId"
+            ).value;
+
+
+        const amount =
+            document.getElementById(
+                "transferAmount"
+            ).value;
+
+
+        const status =
+            document.getElementById(
+                "transferStatus"
+            );
+
+
+        if (!receiverWalletId || !amount) {
+
+            status.innerHTML =
+                '<span class="error">' +
+                'Fill all fields.' +
+                '</span>';
+
+            return;
+        }
+
+
+        try {
+
+            /*
+             * Get current user's wallet.
+             */
+
+            const walletResponse =
+                await fetch(
+                    API.wallet,
+                    {
+
+                        headers:
+                            authHeaders()
+
+                    }
+                );
+
+
+            if (!walletResponse.ok) {
+
+                throw new Error(
+                    "Unable to find your wallet"
+                );
+            }
+
+
+            const wallet =
+                await walletResponse.json();
+
+
+            /*
+             * transferRequestDTO:
+             *
+             * senderWalletId
+             * receiverWalletId
+             * amount
+             */
+
+            const response =
+                await fetch(
+                    API.transfer,
+                    {
+
+                        method: "POST",
+
+                        headers:
+                            authHeaders(),
+
+                        body:
+                            JSON.stringify({
+
+                                senderWalletId:
+                                wallet.walletId,
+
+                                receiverWalletId:
+                                    Number(
+                                        receiverWalletId
+                                    ),
+
+                                amount:
+                                    Number(amount)
+
+                            })
+                    }
+                );
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    await response.text()
+                    || "Transfer failed"
+                );
+            }
+
+
+            status.innerHTML =
+                '<span class="success">' +
+                '✓ Money transferred successfully.' +
+                '</span>';
+
+
+            document.getElementById(
+                "receiverWalletId"
+            ).value = "";
+
+
+            document.getElementById(
+                "transferAmount"
+            ).value = "";
+
+
+            loadWallet();
+
+
+        } catch (error) {
+
+            status.innerHTML =
+                '<span class="error">' +
+                error.message +
+                '</span>';
+
+        }
+
+    }
+
+
+    /* =========================================================
+       TRANSACTIONS
+       ========================================================= */
+
+    async function loadTransactions() {
+
+        const walletId =
+            localStorage.getItem(
+                "walletId"
+            );
+
+
+        if (!walletId) {
+            return;
+        }
+
+
+        const container =
+            document.getElementById(
+                "transactionsList"
+            );
+
+
+        const recentContainer =
+            document.getElementById(
+                "recentTransactions"
+            );
+
+
+        try {
+
+            /*
+             * EXACT BACKEND ENDPOINT:
+             *
+             * GET /api/transactions/wallet/{walletId}
+             */
+
+            const response =
+                await fetch(
+                    API.transactions +
+                    "/" +
+                    walletId,
+                    {
+
+                        headers:
+                            authHeaders()
+
+                    }
+                );
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "Unable to load transactions"
+                );
+            }
+
+
+            const transactions =
+                await response.json();
+
+
+            renderTransactions(
+                transactions,
+                container
+            );
+
+
+            renderTransactions(
+                transactions.slice(0, 5),
+                recentContainer
+            );
+
+
+        } catch (error) {
+
+            console.error(error);
+
+
+            container.innerHTML =
+                '<div class="empty">' +
+                'Unable to load transactions.' +
+                '</div>';
+
+
+            recentContainer.innerHTML =
+                '<div class="empty">' +
+                'Unable to load recent transactions.' +
+                '</div>';
+
+        }
+
+    }
+
+
+    /* =========================================================
+       TRANSACTION RENDERING
+       ========================================================= */
+
+    function renderTransactions(
+        transactions,
+        container
+    ) {
+
+        if (
+            !transactions ||
+            transactions.length === 0
+        ) {
+
+            container.innerHTML =
+                '<div class="empty">' +
+                'No transactions yet.' +
+                '</div>';
+
+            return;
+        }
+
+
+        container.innerHTML = "";
+
+
+        transactions.forEach(
+            transaction => {
+
+                const amount =
+                    Number(
+                        transaction.amount || 0
+                    );
+
+
+                const type =
+                    transaction.type ||
+                    "TRANSACTION";
+
+
+                /*
+                 * DEPOSIT = money coming into
+                 * current wallet.
+                 *
+                 * For TRANSFER, response DTO
+                 * doesn't necessarily tell us
+                 * whether current user is sender
+                 * or receiver, so we display
+                 * the transaction type rather
+                 * than inventing +/-.
+                 */
+
+                let amountClass =
+                    type === "DEPOSIT"
+                        ? "positive"
+                        : "";
+
+
+                let prefix =
+                    type === "DEPOSIT"
+                        ? "+"
+                        : "";
+
+
+                const date =
+                    transaction.createdAt ||
+                    "";
+
+
+                const div =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                div.className =
+                    "transaction";
+
+
+                div.innerHTML = `
+
+                <div>
+
+                    <div class="transaction-type">
+                        ${type}
+                    </div>
+
+                    <div class="transaction-date">
+                        ${date}
+                    </div>
+
+                </div>
+
+
+                <div class="
+                    transaction-amount
+                    ${amountClass}
+                ">
+
+                    ${prefix}
+                    ₹${amount.toFixed(2)}
+
+                </div>
+
+            `;
+
+
+                container.appendChild(div);
+
+            }
+        );
+
+    }
+
+
+    /* =========================================================
+       PROFILE
+       ========================================================= */
+
+    function loadProfile() {
+
+        const token =
+            getToken();
+
+
+        if (!token) {
+            return;
+        }
+
+
+        try {
+
+            /*
+             * JWT structure:
+             *
+             * header.payload.signature
+             *
+             * Our jwtService puts:
+             *
+             * subject = email
+             * role    = USER / ADMIN
+             */
+
+            const payload =
+                JSON.parse(
+                    atob(
+                        token
+                            .split(".")[1]
+                            .replace(/-/g, "+")
+                            .replace(/_/g, "/")
+                    )
+                );
+
+
+            document.getElementById(
+                "profileEmail"
+            ).value =
+                payload.sub ||
+                "Not available";
+
+
+            document.getElementById(
+                "profileRole"
+            ).value =
+                payload.role ||
+                "USER";
+
+
+            document.getElementById(
+                "profileCircle"
+            ).innerText =
+                (
+                    payload.sub ||
+                    "U"
+                )
+                    .charAt(0)
+                    .toUpperCase();
+
+
+        } catch (error) {
+
+            console.error(
+                "Unable to read JWT",
+                error
+            );
+
+        }
+
+    }
+
+
+    /* =========================================================
+       LOGOUT
+       ========================================================= */
+
+    function logout() {
+
+        localStorage.removeItem(
+            "token"
+        );
+
+
+        localStorage.removeItem(
+            "walletId"
+        );
+
+
+        document.getElementById(
+            "app"
+        ).style.display = "none";
+
+
+        document.getElementById(
+            "authContainer"
+        ).style.display = "flex";
+
+
+        showLogin();
+
+    }
+
+
+    /* =========================================================
+       AUTO LOGIN
+       ========================================================= */
+
+    window.onload = function() {
+
+        const token =
+            getToken();
+
+
+        if (token) {
+
+            showApp();
+
+        }
+
+    };
+
+</script>
+
+</body>
+
+</html>

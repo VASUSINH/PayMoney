@@ -119,19 +119,32 @@ public class paymentService {
             return true;
         }
 
-        String payload =
-                request.getRazorpayOrderId()
-                        + "|"
-                        + request.getRazorpayPaymentId();
-
         try {
 
-            String generatedSignature =
-                    Utils.getHash(payload, keySecret);
+            JSONObject options = new JSONObject();
 
-            if (!generatedSignature.equals(
-                    request.getRazorpaySignature())) {
+            options.put(
+                    "razorpay_order_id",
+                    request.getRazorpayOrderId()
+            );
 
+            options.put(
+                    "razorpay_payment_id",
+                    request.getRazorpayPaymentId()
+            );
+
+            options.put(
+                    "razorpay_signature",
+                    request.getRazorpaySignature()
+            );
+
+            boolean verified =
+                    Utils.verifyPaymentSignature(
+                            options,
+                            keySecret
+                    );
+
+            if (!verified) {
                 return false;
             }
 
@@ -169,7 +182,6 @@ public class paymentService {
             return true;
 
         } catch (Exception e) {
-
             throw new externalServiceException(
                     "Payment verification failed", e);
         }
