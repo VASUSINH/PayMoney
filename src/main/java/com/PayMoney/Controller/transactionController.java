@@ -5,6 +5,7 @@ import com.PayMoney.DTO.transferResponseDTO;
 import com.PayMoney.Service.transactionService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,12 +17,16 @@ public class transactionController {
     @Autowired
     private transactionService transactionService;
 
-    @PostMapping("/api/transactions/transfer")
     @PreAuthorize("hasRole('USER')")
-    public transferResponseDTO transfer(
+    @PostMapping("/api/transactions/transfer")
+    public ResponseEntity<transferResponseDTO> transfer(
+            @RequestHeader("Idempotency-Key") String idempotencyKey,
             @Valid @RequestBody transferRequestDTO request) {
 
-        return transactionService.transfer(request);
+        transferResponseDTO response =
+                transactionService.transfer(request, idempotencyKey);
+
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/api/transactions/wallet/{walletId}")

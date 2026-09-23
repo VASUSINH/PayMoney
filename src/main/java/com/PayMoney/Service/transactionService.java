@@ -8,6 +8,7 @@ import com.PayMoney.Exception.invalidTransactionException;
 import com.PayMoney.Exception.transactionNotFoundException;
 import com.PayMoney.Exception.walletNotFoundException;
 import com.PayMoney.Mapper.transactionMapper;
+import com.PayMoney.Repository.idempotencyRepository;
 import com.PayMoney.Repository.transactionRepository;
 import com.PayMoney.Repository.walletRepository;
 import jakarta.transaction.Transactional;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class transactionService {
@@ -36,8 +38,13 @@ public class transactionService {
     @Autowired
     private fraudService fraudService;
 
+    @Autowired
+    private idempotencyRepository idempotencyRepository;
+
     @Transactional
-    public transferResponseDTO transfer(transferRequestDTO request) {
+    public transferResponseDTO transfer(
+            transferRequestDTO request,
+            String idempotencyKey) {
 
         // Get sender & receiver wallet
         Long senderId = request.getSenderWalletId();
@@ -70,6 +77,27 @@ public class transactionService {
                 : secondWallet;
 
         userEntity user = authService.getAuthenticatedUser();
+
+        Optional<idempotencyEntity> existing =
+                idempotencyRepository.findByIdempotencyKey(idempotencyKey);
+
+        if (existing.isPresent()) {
+
+            idempotencyEntity savedKey = existing.get();
+
+            if (!savedKey.getUserId().equals(user.getUserId())) {
+                throw new invalidTransactionException(
+                        "Idempotency key belongs to another user");
+            }
+
+            transactionEntity existingTransaction =
+                    transactionRepository.findById(savedKey.getTransactionId())
+                            .orElseThrow(() ->
+                                    new invalidTransactionException(
+                                            "Original transaction not found"));
+
+            return transactionMapper.toDTO(existingTransaction);
+        }
 
         if (!sender.getUser().getUserId().equals(user.getUserId())) {
             throw new invalidTransactionException(
@@ -115,6 +143,16 @@ public class transactionService {
 
         transactionEntity savedTransaction =
                 transactionRepository.save(transaction);
+        idempotencyEntity idempotency =
+                new idempotencyEntity();
+
+        idempotency.setIdempotencyKey(idempotencyKey);
+        idempotency.setUserId(user.getUserId());
+        idempotency.setTransactionId(
+                savedTransaction.getTransactionId());
+        idempotency.setCreatedAt(LocalDateTime.now());
+
+        idempotencyRepository.save(idempotency);
 
         return transactionMapper.toDTO(savedTransaction);
     }

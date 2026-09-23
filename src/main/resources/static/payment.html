@@ -1664,7 +1664,10 @@
         transactions:
             "/api/transactions/wallet"
 
-    };
+    }
+
+    let currentIdempotencyKey = null;
+
 
 
     /* =========================================================
@@ -2566,6 +2569,8 @@
 
     async function transferMoney() {
 
+        currentIdempotencyKey = crypto.randomUUID();
+
         const receiverWalletId =
             document.getElementById(
                 "receiverWalletId"
@@ -2640,8 +2645,10 @@
 
                         method: "POST",
 
-                        headers:
-                            authHeaders(),
+                        headers: {
+                            ...authHeaders(),
+                            "Idempotency-Key": currentIdempotencyKey
+                        },
 
                         body:
                             JSON.stringify({
@@ -2670,6 +2677,7 @@
                 );
             }
 
+            currentIdempotencyKey = null;
 
             status.innerHTML =
                 '<span class="success">' +
@@ -2923,7 +2931,7 @@
             getToken();
 
 
-        if (!token) {
+        if (!token) {CONST
             return;
         }
 

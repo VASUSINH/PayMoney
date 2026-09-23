@@ -7,6 +7,7 @@ import com.PayMoney.Service.paymentService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,6 +18,7 @@ public class paymentController {
     @Autowired
     private paymentService paymentService;
 
+    @PreAuthorize("hasRole('USER')")
     @PostMapping("/api/payments/create-order")
     public ResponseEntity<paymentResponseDTO> createOrder(
             @Valid @RequestBody paymentRequestDTO request) {
@@ -27,6 +29,7 @@ public class paymentController {
         return ResponseEntity.ok(response);
     }
 
+    @PreAuthorize("hasRole('USER')")
     @PostMapping("/api/payments/verify")
     public ResponseEntity<String> verifyPayment(
             @Valid @RequestBody paymentVerificationRequestDTO request) {
