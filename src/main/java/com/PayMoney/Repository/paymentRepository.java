@@ -11,4 +11,7 @@ public interface paymentRepository
 
     Optional<paymentEntity> findByRazorpayOrderId(String razorpayOrderId);
 
+    Optional<paymentEntity> findByRazorpayPaymentId(
+            String razorpayPaymentId);
+
 }

@@ -3,16 +3,14 @@ package com.PayMoney.Service;
 import com.PayMoney.DTO.paymentRequestDTO;
 import com.PayMoney.DTO.paymentResponseDTO;
 import com.PayMoney.DTO.paymentVerificationRequestDTO;
+import com.PayMoney.DTO.refundRequestDTO;
 import com.PayMoney.Entity.*;
 import com.PayMoney.Exception.externalServiceException;
 import com.PayMoney.Exception.walletNotFoundException;
 import com.PayMoney.Repository.paymentRepository;
 import com.PayMoney.Repository.transactionRepository;
 import com.PayMoney.Repository.walletRepository;
-import com.razorpay.Order;
-import com.razorpay.RazorpayClient;
-import com.razorpay.RazorpayException;
-import com.razorpay.Utils;
+import com.razorpay.*;
 import jakarta.transaction.Transactional;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -184,6 +182,90 @@ public class paymentService {
         } catch (Exception e) {
             throw new externalServiceException(
                     "Payment verification failed", e);
+        }
+    }
+
+    @Transactional
+    public boolean refundPayment(refundRequestDTO request) {
+
+        paymentEntity payment =
+                paymentRepository
+                        .findByRazorpayPaymentId(
+                                request.getRazorpayPaymentId())
+                        .orElseThrow(() ->
+                                new RuntimeException("Payment not found"));
+
+        userEntity user =
+                authService.getAuthenticatedUser();
+
+        if (!payment.getUser().getUserId()
+                .equals(user.getUserId())) {
+
+            throw new RuntimeException(
+                    "Payment does not belong to authenticated user");
+        }
+
+        if (payment.getStatus() != paymentStatus.SUCCESS) {
+            throw new RuntimeException(
+                    "Only successful payments can be refunded");
+        }
+
+        // Get wallet BEFORE calling Razorpay
+        walletEntity wallet =
+                walletRepository
+                        .findByUser_UserId(user.getUserId())
+                        .orElseThrow(() ->
+                                new walletNotFoundException(
+                                        "Wallet not found"));
+
+        // Check balance BEFORE calling Razorpay
+        if (wallet.getBalance()
+                .compareTo(payment.getAmount()) < 0) {
+
+            throw new RuntimeException(
+                    "Insufficient wallet balance for refund");
+        }
+
+        try {
+
+            Refund refund =
+                    razorpayClient.payments.refund(
+                            request.getRazorpayPaymentId());
+
+            payment.setRazorpayRefundId(
+                    refund.get("id"));
+
+            payment.setRefundedAmount(
+                    payment.getAmount());
+
+            payment.setStatus(paymentStatus.REFUNDED);
+
+            paymentRepository.save(payment);
+
+            wallet.setBalance(
+                    wallet.getBalance()
+                            .subtract(payment.getAmount()));
+
+            walletRepository.save(wallet);
+
+            transactionEntity transaction =
+                    new transactionEntity();
+
+            transaction.setSenderWallet(wallet);
+            transaction.setReceiverWallet(null);
+            transaction.setAmount(payment.getAmount());
+            transaction.setType(transactionType.REFUND);
+            transaction.setStatus(transactionStatus.SUCCESS);
+            transaction.setCreatedAt(LocalDateTime.now());
+
+            transactionRepository.save(transaction);
+
+            return true;
+
+        } catch (RazorpayException e) {
+
+            throw new externalServiceException(
+                    "Refund request failed", e);
         }
     }
 

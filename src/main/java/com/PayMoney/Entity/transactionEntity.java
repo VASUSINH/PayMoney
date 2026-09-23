@@ -24,7 +24,7 @@ public class transactionEntity {
         private walletEntity senderWallet;
 
         @ManyToOne
-        @JoinColumn(name = "receiver_wallet_id")
+        @JoinColumn(name = "receiver_wallet_id",nullable= true)
         private walletEntity receiverWallet;
 
         @Column(nullable = false, precision = 19, scale = 2)

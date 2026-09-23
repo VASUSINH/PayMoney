@@ -36,4 +36,9 @@ public class paymentEntity {
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
+
+    @Column(precision = 19, scale = 2)
+    private BigDecimal refundedAmount;
+
+    private String razorpayRefundId;
 }
