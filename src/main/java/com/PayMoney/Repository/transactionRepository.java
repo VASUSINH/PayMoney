@@ -4,6 +4,7 @@ import com.PayMoney.Entity.transactionEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -14,5 +15,10 @@ import java.util.List;
                 Long senderWalletId,
                 Long receiverWalletId
         );
+
+    long countBySenderWallet_WalletIdAndCreatedAtAfter(
+            Long walletId,
+            LocalDateTime time
+    );
     }
 

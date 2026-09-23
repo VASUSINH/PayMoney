@@ -33,6 +33,9 @@ public class transactionService {
     @Autowired
     private authService authService;
 
+    @Autowired
+    private fraudService fraudService;
+
     @Transactional
     public transferResponseDTO transfer(transferRequestDTO request) {
 
@@ -71,6 +74,15 @@ public class transactionService {
         if (!sender.getUser().getUserId().equals(user.getUserId())) {
             throw new invalidTransactionException(
                     "Sender wallet does not belong to authenticated user");
+        }
+
+        //fraud detection condition
+        if (fraudService.isSuspicious(
+                request.getSenderWalletId(),
+                request.getAmount())) {
+
+            throw new invalidTransactionException(
+                    "Transaction flagged for fraud review");
         }
 
         // Check sender balance
