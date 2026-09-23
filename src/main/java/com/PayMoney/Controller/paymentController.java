@@ -2,6 +2,7 @@ package com.PayMoney.Controller;
 
 import com.PayMoney.DTO.paymentRequestDTO;
 import com.PayMoney.DTO.paymentResponseDTO;
+import com.PayMoney.DTO.paymentVerificationRequestDTO;
 import com.PayMoney.Service.paymentService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,5 +25,22 @@ public class paymentController {
                 paymentService.createOrder(request);
 
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/api/payments/verify")
+    public ResponseEntity<String> verifyPayment(
+            @Valid @RequestBody paymentVerificationRequestDTO request) {
+
+        boolean verified =
+                paymentService.verifyPayment(request);
+
+        if (!verified) {
+            return ResponseEntity
+                    .badRequest()
+                    .body("Payment verification failed");
+        }
+
+        return ResponseEntity.ok(
+                "Payment verified successfully");
     }
 }

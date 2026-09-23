@@ -65,4 +65,12 @@ public class globalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
     }
+    @ExceptionHandler(externalServiceException.class)
+    public ResponseEntity<String> handleExternalServiceException(
+            externalServiceException exception) {
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_GATEWAY)
+                .body(exception.getMessage());
+    }
 }
