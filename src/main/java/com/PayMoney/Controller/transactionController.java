@@ -3,6 +3,7 @@ package com.PayMoney.Controller;
 import com.PayMoney.DTO.transferRequestDTO;
 import com.PayMoney.DTO.transferResponseDTO;
 import com.PayMoney.Service.transactionService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@SecurityRequirement(name = "bearer-key")
 @RestController
 public class transactionController {
 

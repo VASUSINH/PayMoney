@@ -5,6 +5,7 @@ import com.PayMoney.DTO.userResponseDTO;
 import com.PayMoney.DTO.loginRequestDTO;
 import com.PayMoney.DTO.loginResponseDTO;
 import com.PayMoney.Service.userService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -34,17 +35,24 @@ public class  userController {
 
         return userService.login(loginRequest);
     }
+
+    @SecurityRequirement(name = "bearer-key")
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("api/allusers")
     public List<userResponseDTO> getAllUsers(){
+
         return userService.getAllUsers();
    }
+
+    @SecurityRequirement(name = "bearer-key")
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/api/getUserById/{id}")
     public userResponseDTO getUserById(@PathVariable Long id) {
+
         return userService.getUserById(id);
     }
 
+    @SecurityRequirement(name = "bearer-key")
     @PutMapping("/api/updateUser/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public userResponseDTO updateUser(
@@ -54,6 +62,7 @@ public class  userController {
         return userService.updateUser(id, userRequest);
     }
 
+    @SecurityRequirement(name = "bearer-key")
     @DeleteMapping("/api/deleteUser/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public void deleteUser(@PathVariable Long id) {

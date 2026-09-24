@@ -6,11 +6,13 @@ import com.PayMoney.DTO.walletResponseDTO;
 import com.PayMoney.DTO.withdrawRequestDTO;
 import com.PayMoney.Service.transactionService;
 import com.PayMoney.Service.walletService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+@SecurityRequirement(name = "bearer-key")
 @RestController
 public class walletController {
     //Finds the Wallet for the User

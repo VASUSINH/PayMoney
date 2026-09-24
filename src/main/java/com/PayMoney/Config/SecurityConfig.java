@@ -35,7 +35,10 @@ public class SecurityConfig {
                                     "/api/addusers",
                                     "/api/login",
                                     "/payment.html",
-                                    "/paymoney-logo.png"
+                                    "/paymoney-logo.png",
+                                    "/swagger-ui/**",
+                                    "/swagger-ui.html",
+                                    "/v3/api-docs/**"
                             ).permitAll()
                             .anyRequest().authenticated()
                     );
