@@ -54,6 +54,12 @@ public class paymentService {
             throw new IllegalArgumentException("Minimum payment amount is ₹1");
         }
 
+        if (amount.compareTo(new BigDecimal("50000.00")) > 0) {
+            throw new IllegalArgumentException(
+                    "Maximum payment amount is ₹50,000"
+            );
+        }
+
         int amountInPaise = amount
                 .multiply(BigDecimal.valueOf(100))
                 .intValueExact();

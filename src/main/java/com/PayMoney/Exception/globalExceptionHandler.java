@@ -12,7 +12,7 @@ import java.util.Map;
 @RestControllerAdvice
 public class globalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public Map<String, String> handleValidationException(
+    public ResponseEntity<Map<String, String>> handleValidationException(
             MethodArgumentNotValidException exception) {
 
         Map<String, String> errors = new HashMap<>();
@@ -20,12 +20,16 @@ public class globalExceptionHandler {
         exception.getBindingResult()
                 .getFieldErrors()
                 .forEach(error ->
-                        errors.put(error.getField(), error.getDefaultMessage())
+                        errors.put(
+                                error.getField(),
+                                error.getDefaultMessage()
+                        )
                 );
 
-        return errors;
+        return ResponseEntity
+                .badRequest()
+                .body(errors);
     }
-
     @ExceptionHandler(insufficientBalanceException.class)
     public ResponseEntity<Map<String, String>> handleInsufficientBalance(
             insufficientBalanceException exception) {
@@ -72,5 +76,17 @@ public class globalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_GATEWAY)
                 .body(exception.getMessage());
+    }
+
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<Map<String, String>> handleRuntimeException(
+            RuntimeException exception) {
+
+        Map<String, String> response = new HashMap<>();
+        response.put("message", exception.getMessage());
+
+        return ResponseEntity
+                .badRequest()
+                .body(response);
     }
 }

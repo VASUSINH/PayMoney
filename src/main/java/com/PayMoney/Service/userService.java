@@ -6,6 +6,7 @@ import com.PayMoney.DTO.loginRequestDTO;
 import com.PayMoney.DTO.loginResponseDTO;
 import com.PayMoney.Entity.userEntity;
 import com.PayMoney.Entity.walletEntity;
+import com.PayMoney.Exception.userNotFoundException;
 import com.PayMoney.Mapper.userMapper;
 import com.PayMoney.Repository.userRepository;
 import com.PayMoney.Repository.walletRepository;
@@ -44,16 +45,21 @@ public class userService {
     @Transactional
     public userResponseDTO createUser(userRequestDTO userRequest) {
 
+        if (userRepository.findByEmail(userRequest.getEmail()).isPresent()) {
+            throw new RuntimeException("Email already registered");
+        }
+
         userEntity user = userMapper.toEntity(userRequest);
 
         user.setRole("USER");
 
-        user.setPassword(passwordEncoder.encode(userRequest.getPassword()));
+        user.setPassword(
+                passwordEncoder.encode(userRequest.getPassword())
+        );
 
         userEntity savedUser = userRepository.save(user);
 
-        // Wallet  creation for the User Added.
-
+        // Wallet creation for the User Added.
         walletEntity wallet = new walletEntity();
 
         wallet.setBalance(BigDecimal.ZERO);
@@ -62,29 +68,25 @@ public class userService {
         walletRepo.save(wallet);
 
         return userMapper.toDTO(savedUser);
-
     }
 
     // Login user(Authentication) Service Class logic.
 
-    public loginResponseDTO login(loginRequestDTO loginRequest) {
+    public loginResponseDTO login(loginRequestDTO request) {
 
-        userEntity user = userRepository.findByEmail(loginRequest.getEmail())
-                .orElseThrow(() -> new RuntimeException("Invalid email or password"));
+        userEntity user = userRepository
+                .findByEmail(request.getEmail())
+                .orElseThrow(() ->
+                        new RuntimeException("User not registered"));
 
-        boolean passwordMatches = passwordEncoder.matches(
-                loginRequest.getPassword(),
-                user.getPassword()
-        );
+        if (!passwordEncoder.matches(
+                request.getPassword(),
+                user.getPassword())) {
 
-        if (!passwordMatches) {
-            throw new RuntimeException("Invalid email or password");
+            throw new RuntimeException("Password does not match");
         }
 
-        //Token is Created after Login.
-
         String token = jwtService.generateToken(user);
-
 
         return new loginResponseDTO(token);
     }

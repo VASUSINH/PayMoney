@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PayMoney — Digital Wallet</title>
+<link rel="icon" type="image/png" href="/paymoney-logo.png">
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<style>
+:root{--bg:#07111f;--panel:rgba(15,27,47,.78);--panel2:rgba(255,255,255,.055);--line:rgba(255,255,255,.09);--text:#f8fafc;--muted:#94a3b8;--blue:#38bdf8;--indigo:#6366f1;--green:#4ade80;--red:#fb7185;--yellow:#fbbf24;--shadow:0 24px 70px rgba(0,0,0,.32)}
+*{box-sizing:border-box;margin:0;padding:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+html{scroll-behavior:smooth}body{min-height:100vh;background:radial-gradient(circle at 8% 5%,rgba(37,99,235,.38),transparent 28%),radial-gradient(circle at 92% 90%,rgba(124,58,237,.3),transparent 28%),var(--bg);color:var(--text);overflow-x:hidden}button,input{font:inherit}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.55;transform:none!important}.hidden{display:none!important}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px);background-size:42px 42px;mask-image:linear-gradient(to bottom,black,transparent 90%)}
+/* AUTH */
+#authContainer{min-height:100vh;display:grid;place-items:center;padding:24px;position:relative}.auth-glow{position:absolute;width:340px;height:340px;border-radius:50%;background:rgba(56,189,248,.12);filter:blur(80px);animation:float 6s ease-in-out infinite}.auth-card{width:min(430px,100%);padding:34px;background:rgba(10,22,39,.78);backdrop-filter:blur(24px);border:1px solid var(--line);border-radius:26px;box-shadow:var(--shadow);animation:appear .65s ease}.brand{text-align:center;font-size:31px;font-weight:800;letter-spacing:-1px}.brand span{color:var(--blue)}.subtitle{text-align:center;color:var(--muted);font-size:13px;margin:8px 0 28px}.auth-badge{display:flex;justify-content:center;margin-bottom:18px}.badge{padding:6px 10px;border:1px solid rgba(56,189,248,.2);border-radius:999px;background:rgba(56,189,248,.08);color:#bae6fd;font-size:11px}.field{margin-bottom:15px}.label{display:block;color:#cbd5e1;font-size:12px;font-weight:600;margin:0 0 7px 2px}.input-wrap{position:relative}.input-wrap input{padding-right:44px}input{width:100%;padding:13px 14px;border:1px solid var(--line);border-radius:12px;outline:0;background:rgba(255,255,255,.055);color:var(--text);font-size:14px;transition:border-color .2s,box-shadow .2s,background .2s,transform .2s}input:focus{border-color:rgba(56,189,248,.65);box-shadow:0 0 0 4px rgba(56,189,248,.09);background:rgba(255,255,255,.075)}input::placeholder{color:#64748b}.toggle-password{position:absolute;right:9px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:#94a3b8;padding:6px}.primary-button{width:100%;padding:13px 16px;border:0;border-radius:12px;background:linear-gradient(135deg,var(--blue),var(--indigo));color:white;font-weight:750;font-size:14px;box-shadow:0 12px 28px rgba(59,130,246,.2);transition:transform .22s,box-shadow .22s,filter .22s}.primary-button:hover{transform:translateY(-2px);box-shadow:0 16px 34px rgba(59,130,246,.3);filter:brightness(1.05)}.secondary-button{width:100%;padding:12px 14px;margin-top:9px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.045);color:white;font-weight:650;transition:.2s}.secondary-button:hover{background:rgba(255,255,255,.09);transform:translateY(-1px)}.switch{text-align:center;color:var(--muted);font-size:12px;margin-top:17px}.switch button{border:0;background:none;color:var(--blue);font-weight:700}.status{min-height:20px;margin-top:12px;text-align:center;font-size:12px;line-height:1.5}.success{color:var(--green)}.error{color:#fda4af}.info{color:#7dd3fc}.loader{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.25);border-top-color:white;border-radius:50%;animation:spin .75s linear infinite;vertical-align:-2px;margin-right:6px}
+/* APP */
+#app{display:none;min-height:100vh}.sidebar{position:fixed;z-index:30;inset:0 auto 0 0;width:248px;padding:24px 16px;background:rgba(7,17,31,.84);backdrop-filter:blur(22px);border-right:1px solid var(--line)}.sidebar-brand{font-size:24px;font-weight:800;padding:8px 12px 32px}.sidebar-brand span{color:var(--blue)}.nav{display:grid;gap:6px}.nav-item{border:1px solid transparent;background:transparent;color:#94a3b8;padding:12px 13px;border-radius:12px;text-align:left;font-size:13px;transition:.22s;position:relative}.nav-item:hover{color:white;background:rgba(255,255,255,.045);transform:translateX(2px)}.nav-item.active{color:white;background:linear-gradient(90deg,rgba(56,189,248,.13),rgba(99,102,241,.09));border-color:rgba(56,189,248,.12)}.nav-item.active:before{content:"";position:absolute;left:-17px;top:9px;bottom:9px;width:3px;border-radius:0 5px 5px 0;background:var(--blue)}.logout-button{position:absolute;left:16px;right:16px;bottom:22px;padding:12px;border:1px solid rgba(251,113,133,.18);border-radius:12px;background:rgba(251,113,133,.06);color:#fda4af;font-weight:700;transition:.2s}.logout-button:hover{background:rgba(251,113,133,.12);transform:translateY(-1px)}.main{margin-left:248px;padding:28px;min-height:100vh;max-width:1500px}.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:25px}.welcome h2{font-size:25px;letter-spacing:-.5px}.welcome p{color:var(--muted);font-size:12px;margin-top:4px}.profile-circle{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,var(--blue),var(--indigo));font-weight:800;box-shadow:0 8px 24px rgba(59,130,246,.25)}.mobile-menu{display:none}
+.screen{display:none}.screen.active{display:block;animation:screenIn .32s ease}.grid{display:grid;gap:16px}.grid-3{grid-template-columns:repeat(3,1fr)}.panel{padding:22px;background:var(--panel);backdrop-filter:blur(18px);border:1px solid var(--line);border-radius:18px;box-shadow:0 12px 35px rgba(0,0,0,.12)}.panel h3{font-size:15px;margin-bottom:17px}.muted{color:var(--muted)}.small{font-size:11px}.form-container{max-width:560px}.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.limit-note{font-size:11px;color:#64748b;margin:-4px 0 13px}.inline-actions{display:flex;gap:9px}.inline-actions>*{flex:1}
+/* DASHBOARD */
+.balance-card{position:relative;overflow:hidden;padding:29px;border-radius:22px;background:linear-gradient(135deg,#1d4ed8,#4f46e5 62%,#6d28d9);box-shadow:0 24px 50px rgba(37,99,235,.22);margin-bottom:16px}.balance-card:after{content:"";position:absolute;width:230px;height:230px;border:1px solid rgba(255,255,255,.12);border-radius:50%;right:-80px;top:-100px;box-shadow:0 0 0 45px rgba(255,255,255,.025),0 0 0 90px rgba(255,255,255,.018)}.balance-label{color:#dbeafe;font-size:12px}.balance{font-size:38px;font-weight:800;letter-spacing:-1.5px;margin:9px 0 22px}.balance-actions{display:flex;gap:9px;position:relative;z-index:1}.small-button{padding:10px 15px;border:1px solid rgba(255,255,255,.14);border-radius:10px;background:rgba(255,255,255,.14);color:white;font-weight:700;transition:.2s}.small-button:hover{background:rgba(255,255,255,.23);transform:translateY(-1px)}.stat-card{padding:19px;border:1px solid var(--line);border-radius:16px;background:var(--panel2);transition:.25s}.stat-card:hover{transform:translateY(-3px);background:rgba(255,255,255,.07)}.stat-icon{font-size:20px;margin-bottom:10px}.stat-title{font-size:13px;font-weight:750}.stat-desc{font-size:11px;color:var(--muted);margin-top:4px}.recent-head{display:flex;justify-content:space-between;align-items:center}.text-button{border:0;background:none;color:var(--blue);font-size:11px;font-weight:700}.text-button:hover{text-decoration:underline}
+/* TRANSACTIONS */
+.toolbar{display:flex;gap:9px;margin-bottom:15px;flex-wrap:wrap}.toolbar input{max-width:280px}.filter{padding:11px 12px;border:1px solid var(--line);border-radius:11px;background:rgba(255,255,255,.045);color:white;outline:none}.transaction{display:flex;justify-content:space-between;align-items:center;padding:15px 3px;border-bottom:1px solid rgba(255,255,255,.065);transition:.18s}.transaction:hover{padding-left:7px;padding-right:7px;background:rgba(255,255,255,.025);border-radius:9px}.transaction:last-child{border-bottom:0}.transaction-main{display:flex;align-items:center;gap:11px}.tx-icon{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:rgba(255,255,255,.06)}.transaction-type{font-weight:750;font-size:13px}.transaction-date{color:#64748b;font-size:10px;margin-top:3px}.transaction-amount{font-weight:800;font-size:13px}.positive{color:var(--green)}.negative{color:var(--red)}.neutral{color:#e2e8f0}.empty{text-align:center;color:#64748b;padding:35px 15px;font-size:12px}
+
+
+/* =================================================
+   DROPDOWN
+   ================================================= */
+
+select {
+  width: 100%;
+  padding: 14px;
+
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 12px;
+
+  background: #0f172a;
+  color: white;
+
+  font-size: 14px;
+  outline: none;
+}
+
+select:focus {
+  border-color: #38bdf8;
+
+  box-shadow:
+          0 0 0 3px
+          rgba(56,189,248,0.12);
+}
+
+select option {
+  background: #0f172a;
+  color: white;
+}
+
+select option:checked {
+  background: #1e293b;
+  color: white;
+}
+
+/* TOAST + MODAL */
+#toastContainer{position:fixed;right:22px;bottom:22px;z-index:100;display:grid;gap:10px;width:min(360px,calc(100vw - 44px))}.toast{padding:13px 15px;border:1px solid var(--line);border-radius:13px;background:rgba(10,22,39,.92);backdrop-filter:blur(16px);box-shadow:var(--shadow);font-size:12px;animation:toastIn .3s ease}.toast.success-toast{border-color:rgba(74,222,128,.22)}.toast.error-toast{border-color:rgba(251,113,133,.25)}
+/* RESPONSIVE */
+@media(max-width:900px){.sidebar{width:78px;padding:20px 10px}.sidebar-brand{font-size:0;text-align:center;padding:8px 0 30px}.sidebar-brand span{font-size:22px}.nav-item{font-size:0;text-align:center;padding:13px 5px}.nav-item:before{display:none}.logout-button{font-size:0}.logout-button:first-letter{font-size:16px}.main{margin-left:78px}.grid-3{grid-template-columns:1fr}.form-container{max-width:none}}
+@media(max-width:600px){.main{padding:17px;margin-left:0;padding-bottom:80px}.sidebar{position:fixed;left:12px;right:12px;top:auto;bottom:12px;width:auto;height:58px;padding:7px;border:1px solid var(--line);border-radius:18px;display:flex;align-items:center;background:rgba(7,17,31,.93);box-shadow:var(--shadow)}.sidebar-brand,.logout-button{display:none}.nav{display:flex;width:100%;justify-content:space-around;gap:2px}.nav-item{font-size:0;width:48px;height:44px;padding:8px}.nav-item::after{font-size:18px}.nav-item:nth-child(1)::after{content:"🏠"}.nav-item:nth-child(2)::after{content:"💰"}.nav-item:nth-child(3)::after{content:"↗"}.nav-item:nth-child(4)::after{content:"↕"}.nav-item:nth-child(5)::after{content:"👤"}.nav-item:nth-child(6)::after{content:"❓"}.nav-item.active{background:rgba(56,189,248,.12)}.topbar{margin-bottom:18px}.welcome h2{font-size:21px}.balance{font-size:31px}.balance-card{padding:23px}.form-row{grid-template-columns:1fr}.panel{padding:18px}.toolbar input{max-width:none;flex:1;min-width:100%}.transaction{padding:13px 0}.transaction-date{max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.auth-card{padding:27px 21px}.inline-actions{flex-direction:column}}
+@keyframes spin{to{transform:rotate(360deg)}}@keyframes appear{from{opacity:0;transform:translateY(25px) scale(.97)}to{opacity:1;transform:none}}@keyframes screenIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}@keyframes toastIn{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}@keyframes float{50%{transform:translate(20px,-15px)}}
+</style>
+</head>
+<body>
+<div id="authContainer"><div class="auth-glow"></div><div class="auth-card">
+  <div class="auth-badge"><span class="badge">SECURE DIGITAL WALLET</span></div>
+  <div class="brand">Pay<span>Money</span></div>
+  <p class="subtitle">Simple wallet & payment management</p>
+
+  <div id="loginScreen">
+    <div class="field"><label class="label">Email</label><input id="loginEmail" type="email" autocomplete="email" placeholder="Enter your email"></div>
+    <div class="field"><label class="label">Password</label><div class="input-wrap"><input id="loginPassword" type="password" autocomplete="current-password" placeholder="Enter your password"><button class="toggle-password" type="button" onclick="togglePassword('loginPassword',this)">◉</button></div></div>
+    <button class="primary-button" id="loginButton" onclick="login()">Login</button><div id="loginStatus" class="status"></div>
+    <div class="switch">Don't have an account? <button type="button" onclick="showRegister()">Register</button></div>
+  </div>
+
+  <div id="registerScreen" class="hidden">
+    <div class="field"><label class="label">Name</label><input id="registerName" type="text" autocomplete="name" placeholder="Your name"></div>
+    <div class="field"><label class="label">Email</label><input id="registerEmail" type="email" autocomplete="email" placeholder="Your email"></div>
+    <div class="field"><label class="label">Password</label><div class="input-wrap"><input id="registerPassword" type="password" autocomplete="new-password" placeholder="Minimum 8 characters"><button class="toggle-password" type="button" onclick="togglePassword('registerPassword',this)">◉</button></div></div>
+    <button class="primary-button" id="registerButton" onclick="registerUser()">Create Account</button><div id="registerStatus" class="status"></div>
+    <div class="switch">Already have an account? <button type="button" onclick="showLogin()">Login</button></div>
+  </div>
+</div></div>
+
+<div id="app">
+  <aside class="sidebar">
+    <div class="sidebar-brand">Pay<span>Money</span></div>
+    <nav class="nav">
+      <button class="nav-item active" onclick="showScreen('dashboard',this)">🏠 Dashboard</button>
+      <button class="nav-item" onclick="showScreen('wallet',this)">💰 Wallet</button>
+      <button class="nav-item" onclick="showScreen('transfer',this)">↗ Send Money</button>
+      <button class="nav-item" onclick="showScreen('transactions',this)">↕ Transactions</button>
+      <button class="nav-item" onclick="showScreen('profile',this)">👤 Profile</button>
+      <button class="nav-item" onclick="showScreen('support',this)">❓ Support</button>
+    </nav>
+    <button class="logout-button" onclick="logout()">🚪 Logout</button>
+  </aside>
+
+  <main class="main">
+    <header class="topbar"><div class="welcome"><h2 id="pageTitle">Dashboard</h2><p id="pageSubtitle">Manage your digital wallet</p></div><div class="profile-circle" id="profileCircle">U</div></header>
+
+    <section id="dashboard" class="screen active">
+      <div class="balance-card"><div class="balance-label">Available Balance</div><div class="balance" id="dashboardBalance">₹0.00</div><div class="balance-actions"><button class="small-button" onclick="showWallet()">+ Add Money</button><button class="small-button" onclick="showWithdraw()">Withdraw</button><button class="small-button" onclick="showTransfer()">Send Money</button></div></div>
+      <div class="grid grid-3">
+        <div class="stat-card" onclick="showWallet()"><div class="stat-icon">💰</div><div class="stat-title">Wallet</div><div class="stat-desc">Add money and withdraw funds</div></div>
+        <div class="stat-card" onclick="showTransfer()"><div class="stat-icon">↗</div><div class="stat-title">Send Money</div><div class="stat-desc">Secure wallet-to-wallet transfer</div></div>
+        <div class="stat-card" onclick="showTransactions()"><div class="stat-icon">↕</div><div class="stat-title">Transactions</div><div class="stat-desc">Review your wallet activity</div></div>
+      </div>
+      <div class="panel" style="margin-top:16px"><div class="recent-head"><h3>Recent Transactions</h3><button class="text-button" onclick="showTransactions()">View all →</button></div><div id="recentTransactions"><div class="empty">Loading...</div></div></div>
+    </section>
+
+    <section id="wallet" class="screen">
+      <div class="panel" style="margin-bottom:16px"><div class="muted small">WALLET BALANCE</div><div class="balance" id="walletBalance">₹0.00</div><div class="muted small">Wallet ID: <strong id="walletIdDisplay">—</strong></div></div>
+      <div class="grid grid-3">
+        <div class="panel"><h3>💳 Add Money</h3><div class="field"><label class="label">Amount (INR)</label><input type="number" id="addMoneyAmount" min="1" max="50000" step="0.01" placeholder="1 — 50,000"></div><div class="limit-note">Maximum per payment: ₹50,000</div><button class="primary-button" id="addMoneyButton" onclick="addMoney()">Add Money with Razorpay</button><div id="addMoneyStatus" class="status"></div></div>
+        <div class="panel"><h3>💸 Withdraw Money</h3><div class="field"><label class="label">Amount (INR)</label><input type="number" id="withdrawAmount" min="1" max="50000" step="0.01" placeholder="1 — 50,000"></div><div class="limit-note">Maximum per withdrawal: ₹50,000</div><button class="primary-button" id="withdrawButton" onclick="withdrawMoney()">Withdraw</button><div id="withdrawStatus" class="status"></div></div>
+        <div class="panel"><h3>ℹ️ Wallet Rules</h3><p class="muted small" style="line-height:1.8">• Add Money uses Razorpay Test Mode.<br>• Wallet operations require authentication.<br>• Amount limit is enforced by the backend.<br>• Successful operations appear in transaction history.</p></div>
+      </div>
+    </section>
+
+    <section id="transfer" class="screen">
+      <div class="panel form-container"><h3>↗ Send Money</h3><div class="field"><label class="label">Receiver Wallet ID</label><input type="number" id="receiverWalletId" min="1" placeholder="Enter receiver wallet ID"></div><div class="field"><label class="label">Amount (INR)</label><input type="number" id="transferAmount" min="1" max="50000" step="0.01" placeholder="1 — 50,000"></div><div class="limit-note">Maximum per transfer: ₹50,000 · Each request gets a unique idempotency key automatically.</div><button class="primary-button" id="transferButton" onclick="transferMoney()">Send Money</button><div id="transferStatus" class="status"></div></div>
+    </section>
+
+    <section id="transactions" class="screen">
+      <div class="panel"><div class="recent-head"><h3>Transaction History</h3><button class="text-button" onclick="loadTransactions()">↻ Refresh</button></div><div class="toolbar"><input id="transactionSearch" type="search" placeholder="Search transaction type..." oninput="applyTransactionFilter()"><select id="transactionFilter" class="filter" onchange="applyTransactionFilter()"><option value="ALL">All types</option><option value="DEPOSIT">Deposits</option><option value="WITHDRAW">Withdrawals</option><option value="TRANSFER">Transfers</option><option value="REFUND">Refunds</option></select></div><div id="transactionsList"><div class="empty">Loading transactions...</div></div></div>
+    </section>
+
+    <section id="profile" class="screen">
+      <div class="panel form-container"><h3>👤 My Profile</h3><div class="field"><label class="label">Email</label><input id="profileEmail" readonly></div><div class="form-row"><div class="field"><label class="label">Role</label><input id="profileRole" readonly></div><div class="field"><label class="label">Wallet ID</label><input id="profileWalletId" readonly></div></div><div class="field"><label class="label">Authentication</label><input value="JWT secured session" readonly></div><p class="muted small" style="line-height:1.6">Your account information is derived from the authenticated JWT session. Logout removes the local session token.</p></div>
+    </section>
+
+
+
+    <section id="support" class="screen"><div class="grid grid-3">
+      <div class="panel"><h3>💳 Payment</h3><p class="muted small" style="line-height:1.7">Add Money opens Razorpay Test Mode. After checkout, PayMoney verifies the Razorpay signature before crediting the wallet.</p></div>
+      <div class="panel"><h3>🔐 Security</h3><p class="muted small" style="line-height:1.7">Protected APIs use JWT authentication. Transfers also use wallet ownership validation, transactional processing, locking and idempotency.</p></div>
+      <div class="panel"><h3>💰 Limits</h3><p class="muted small" style="line-height:1.7">Deposit, withdrawal and transfer requests are limited to ₹50,000 per transaction by the backend validation rules.</p></div>
+    </div></section>
+  </main>
+</div>
+<div id="toastContainer"></div>
+
+<script>
+const API={login:'/api/login',register:'/api/addusers',wallet:'/api/wallet',withdraw:'/api/wallet/withdraw',transfer:'/api/transactions/transfer',transactions:'/api/transactions/wallet'};
+const MAX_AMOUNT=50000,MIN_AMOUNT=1;
+let allTransactions=[];
+
+function getToken(){return localStorage.getItem('token')}
+function authHeaders(){return {'Content-Type':'application/json','Authorization':'Bearer '+getToken()}}
+function escapeHtml(value){return String(value??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+function togglePassword(id,btn){const input=document.getElementById(id);input.type=input.type==='password'?'text':'password';btn.textContent=input.type==='password'?'◉':'◌'}
+function setButtonLoading(id,loading,label){const b=document.getElementById(id);if(!b)return;if(loading){b.disabled=true;b.dataset.label=b.textContent;b.innerHTML='<span class="loader"></span>'+label}else{b.disabled=false;b.textContent=b.dataset.label||label}}
+function setStatus(id,message,type='info'){const el=document.getElementById(id);if(el)el.innerHTML=message?'<span class="'+type+'">'+escapeHtml(message)+'</span>':''}
+function toast(message,type='success'){const box=document.createElement('div');box.className='toast '+(type==='success'?'success-toast':'error-toast');box.textContent=message;document.getElementById('toastContainer').appendChild(box);setTimeout(()=>box.remove(),3800)}
+
+async function readResponse(response,fallback='Request failed'){
+  const text=await response.text();
+  if(!text)return fallback;
+  try{
+    const data=JSON.parse(text);
+    if(typeof data==='string')return friendlyError(data,fallback);
+    if(data.message)return friendlyError(data.message,fallback);
+    const values=Object.entries(data).map(([k,v])=>k+': '+v);
+    return friendlyError(values.join(' · ')||fallback,fallback);
+  }catch{return friendlyError(text,fallback)}
+}
+
+function friendlyError(message,fallback='Request failed'){
+  const raw=String(message||'').trim();
+  if(!raw)return fallback;
+  const lower=raw.toLowerCase();
+
+  if(lower.includes('failed to fetch') || lower.includes('networkerror'))
+    return 'Unable to connect to PayMoney. Make sure the backend is running.';
+
+  if(lower.includes('user not found') || lower.includes('user not registered') ||
+     lower.includes('email not found') || lower.includes('email does not exist') ||
+     lower.includes('account not found'))
+    return 'Email is not registered.';
+
+  if(lower.includes('invalid password') || lower.includes('password does not match') ||
+     lower.includes('incorrect password') || lower.includes('wrong password'))
+    return 'Password does not match.';
+
+  if(lower.includes('invalid email or password'))
+    return 'Email or password is incorrect.';
+
+  if(lower.includes('already registered') || lower.includes('email already exists') ||
+     lower.includes('email already exist') || lower.includes('duplicate key') ||
+     lower.includes('unique constraint'))
+    return 'Email is already registered.';
+
+  if(lower.includes('must be less than or equal to 50000') ||
+     lower.includes('less than or equal to 50000') || lower.includes('maximum amount'))
+    return 'Amount is not allowed. The maximum per transaction is ₹50,000.';
+
+  if(lower.includes('insufficient balance'))
+    return 'Withdrawal/transfer cannot be completed because your wallet balance is insufficient.';
+
+  if(lower.includes('wallet not found'))
+    return 'Wallet not found for this account.';
+
+  if(lower.includes('same wallet'))
+    return 'You cannot transfer money to the same wallet.';
+
+  if(lower.includes('sender wallet does not belong'))
+    return 'This wallet does not belong to your account.';
+
+  if(lower.includes('receiver wallet') && lower.includes('not found'))
+    return 'Receiver wallet was not found.';
+
+  if(lower.includes('transaction flagged for fraud'))
+    return 'This transaction was blocked because it was flagged for fraud review.';
+
+  if(lower.includes('idempotency key belongs to another user'))
+    return 'This transaction request key belongs to another user.';
+
+  return raw;
+}
+
+function validateAmount(value){const amount=Number(value);if(!Number.isFinite(amount)||amount<MIN_AMOUNT)return 'Enter an amount of at least ₹1.';if(amount>MAX_AMOUNT)return 'Amount is not allowed. The maximum per transaction is ₹50,000.';return null}
+
+function showRegister(){document.getElementById('loginScreen').classList.add('hidden');document.getElementById('registerScreen').classList.remove('hidden');setStatus('loginStatus','')}
+function showLogin(){document.getElementById('registerScreen').classList.add('hidden');document.getElementById('loginScreen').classList.remove('hidden');setStatus('registerStatus','')}
+
+async function registerUser(){const name=document.getElementById('registerName').value.trim(),email=document.getElementById('registerEmail').value.trim(),password=document.getElementById('registerPassword').value,status='registerStatus';if(!name||!email||!password){setStatus(status,'Please fill all fields.','error');return}if(password.length<8){setStatus(status,'Password must contain at least 8 characters.','error');return}setButtonLoading('registerButton',true,'Creating account...');setStatus(status,'Creating your account...','info');try{const r=await fetch(API.register,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,password})});if(!r.ok)throw new Error(await readResponse(r,'Registration failed'));setStatus(status,'Account created successfully. Redirecting to login...','success');document.getElementById('loginEmail').value=email;document.getElementById('loginPassword').value='';setTimeout(showLogin,900)}catch(e){setStatus(status,friendlyError(e.message,'Registration failed'),'error')}finally{setButtonLoading('registerButton',false,'Create Account')}}
+
+async function login(){const email=document.getElementById('loginEmail').value.trim(),password=document.getElementById('loginPassword').value;if(!email||!password){setStatus('loginStatus','Enter email and password.','error');return}setButtonLoading('loginButton',true,'Signing in...');setStatus('loginStatus','Authenticating...','info');try{const r=await fetch(API.login,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});if(!r.ok)throw new Error(await readResponse(r,'Email or password is incorrect.'));const data=await r.json();if(!data.token)throw new Error('Authentication token was not returned.');localStorage.setItem('token',data.token);showApp();toast('Welcome back!')}catch(e){setStatus('loginStatus',friendlyError(e.message,'Email or password is incorrect.'),'error')}finally{setButtonLoading('loginButton',false,'Login')}}
+
+function showApp(){document.getElementById('authContainer').style.display='none';document.getElementById('app').style.display='block';loadProfile();loadWallet()}
+function showScreen(name,element){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));document.getElementById(name).classList.add('active');if(element)element.classList.add('active');const titles={dashboard:'Dashboard',wallet:'Wallet',transfer:'Send Money',transactions:'Transactions',profile:'Profile',support:'Support'},subs={dashboard:'Manage your digital wallet',wallet:'Manage your wallet',transfer:'Transfer money securely',transactions:'Review wallet activity',profile:'Account & session details',support:'PayMoney help center'};document.getElementById('pageTitle').textContent=titles[name];document.getElementById('pageSubtitle').textContent=subs[name];if(name==='transactions')loadTransactions()}
+function nav(index,name){showScreen(name,document.querySelectorAll('.nav-item')[index])}
+function showWallet(){nav(1,'wallet')}
+function showTransfer(){nav(2,'transfer')}
+function showTransactions(){nav(3,'transactions')}
+function showWithdraw(){showWallet();setTimeout(()=>document.getElementById('withdrawAmount').focus(),150)}
+
+async function loadWallet(){try{const r=await fetch(API.wallet,{headers:authHeaders()});if(r.status===401){logout();return}if(!r.ok)throw new Error(await readResponse(r,'Unable to load wallet'));const wallet=await r.json(),balance=Number(wallet.balance||0),id=wallet.walletId;document.getElementById('dashboardBalance').textContent='₹'+balance.toFixed(2);document.getElementById('walletBalance').textContent='₹'+balance.toFixed(2);document.getElementById('walletIdDisplay').textContent=id??'—';document.getElementById('profileWalletId').value=id??'Not available';if(id!=null)localStorage.setItem('walletId',id);loadTransactions()}catch(e){console.error(e);toast(e.message,'error')}}
+
+async function addMoney(){const input=document.getElementById('addMoneyAmount'),amount=Number(input.value),error=validateAmount(input.value);if(error){setStatus('addMoneyStatus',error,'error');return}setButtonLoading('addMoneyButton',true,'Opening checkout...');setStatus('addMoneyStatus','Creating secure payment order...','info');try{const r=await fetch('/api/payments/create-order',{method:'POST',headers:authHeaders(),body:JSON.stringify({amount})});if(!r.ok)throw new Error(await readResponse(r,'Unable to create payment order'));const order=await r.json();if(!window.Razorpay)throw new Error('Razorpay Checkout could not be loaded.');const options={key:'rzp_test_TdxakRD4r7EGTJ',amount:Number(order.amount)*100,currency:order.currency,name:'PayMoney',description:'Add Money to Wallet',order_id:order.orderId,handler:verifyPayment,theme:{color:'#6366f1'},modal:{ondismiss:()=>{setStatus('addMoneyStatus','Payment window closed. No wallet change was made.','info');setButtonLoading('addMoneyButton',false,'Add Money with Razorpay')}}};const razorpay=new Razorpay(options);razorpay.on('payment.failed',()=>{setStatus('addMoneyStatus','Payment failed. Your wallet was not credited.','error');setButtonLoading('addMoneyButton',false,'Add Money with Razorpay')});razorpay.open()}catch(e){setStatus('addMoneyStatus',e.message,'error');setButtonLoading('addMoneyButton',false,'Add Money with Razorpay')}}
+
+async function verifyPayment(response){setStatus('addMoneyStatus','Verifying payment signature and crediting wallet...','info');try{const r=await fetch('/api/payments/verify',{method:'POST',headers:authHeaders(),body:JSON.stringify({razorpayPaymentId:response.razorpay_payment_id,razorpayOrderId:response.razorpay_order_id,razorpaySignature:response.razorpay_signature})});if(!r.ok)throw new Error(await readResponse(r,'Payment verification failed'));setStatus('addMoneyStatus','✓ Payment verified. Wallet credited successfully.','success');document.getElementById('addMoneyAmount').value='';toast('Wallet credited successfully');await loadWallet()}catch(e){setStatus('addMoneyStatus',e.message,'error');toast(e.message,'error')}finally{setButtonLoading('addMoneyButton',false,'Add Money with Razorpay')}}
+
+async function withdrawMoney(){const input=document.getElementById('withdrawAmount'),error=validateAmount(input.value);if(error){setStatus('withdrawStatus',error,'error');return}const amount=Number(input.value);setButtonLoading('withdrawButton',true,'Processing...');setStatus('withdrawStatus','Processing withdrawal...','info');try{const r=await fetch(API.withdraw,{method:'POST',headers:authHeaders(),body:JSON.stringify({amount})});if(!r.ok)throw new Error(await readResponse(r,'Withdrawal failed'));setStatus('withdrawStatus','✓ Withdrawal successful.','success');input.value='';toast('Withdrawal completed');await loadWallet()}catch(e){setStatus('withdrawStatus',e.message,'error');toast(e.message,'error')}finally{setButtonLoading('withdrawButton',false,'Withdraw')}}
+
+async function transferMoney(){const receiver=Number(document.getElementById('receiverWalletId').value),amount=Number(document.getElementById('transferAmount').value);if(!Number.isInteger(receiver)||receiver<1){setStatus('transferStatus','Enter a valid receiver wallet ID.','error');return}const amountError=validateAmount(amount);if(amountError){setStatus('transferStatus',amountError,'error');return}const walletId=localStorage.getItem('walletId');if(!walletId){setStatus('transferStatus','Your wallet could not be identified. Refresh and try again.','error');return}const key=crypto.randomUUID();setButtonLoading('transferButton',true,'Transferring...');setStatus('transferStatus','Validating wallet and processing transfer...','info');try{const r=await fetch(API.transfer,{method:'POST',headers:{...authHeaders(),'Idempotency-Key':key},body:JSON.stringify({senderWalletId:Number(walletId),receiverWalletId:receiver,amount})});if(!r.ok)throw new Error(await readResponse(r,'Transfer failed'));document.getElementById('receiverWalletId').value='';document.getElementById('transferAmount').value='';setStatus('transferStatus','✓ Money transferred successfully.','success');toast('Transfer completed successfully');await loadWallet()}catch(e){setStatus('transferStatus',e.message,'error');toast(e.message,'error')}finally{setButtonLoading('transferButton',false,'Send Money')}}
+
+async function loadTransactions(){const walletId=localStorage.getItem('walletId');if(!walletId)return;const container=document.getElementById('transactionsList'),recent=document.getElementById('recentTransactions');try{const r=await fetch(API.transactions+'/'+encodeURIComponent(walletId),{headers:authHeaders()});if(r.status===401){logout();return}if(!r.ok)throw new Error(await readResponse(r,'Unable to load transactions'));allTransactions=await r.json();renderTransactions(allTransactions,container);renderTransactions(allTransactions.slice(0,5),recent)}catch(e){console.error(e);container.innerHTML='<div class="empty">Unable to load transactions.</div>';recent.innerHTML='<div class="empty">Unable to load recent transactions.</div>'}}
+function txMeta(type){return{DEPOSIT:['↙','positive','+'],WITHDRAW:['↗','negative','−'],TRANSFER:['↕','neutral',''],REFUND:['↩','positive','+']}[type]||['•','neutral','']}
+function renderTransactions(list,container){if(!container)return;if(!list||!list.length){container.innerHTML='<div class="empty">No transactions yet.</div>';return}container.innerHTML='';list.forEach(tx=>{const type=String(tx.type||'TRANSACTION').toUpperCase(),amount=Number(tx.amount||0),[icon,cls,prefix]=txMeta(type),date=tx.createdAt?new Date(tx.createdAt).toLocaleString():'—';const div=document.createElement('div');div.className='transaction';div.innerHTML='<div class="transaction-main"><div class="tx-icon">'+icon+'</div><div><div class="transaction-type">'+escapeHtml(type)+'</div><div class="transaction-date">'+escapeHtml(date)+'</div></div></div><div class="transaction-amount '+cls+'">'+prefix+'₹'+amount.toFixed(2)+'</div>';container.appendChild(div)})}
+function applyTransactionFilter(){const search=(document.getElementById('transactionSearch').value||'').toLowerCase().trim(),filter=document.getElementById('transactionFilter').value;const list=allTransactions.filter(tx=>(filter==='ALL'||String(tx.type||'').toUpperCase()===filter)&&(!search||String(tx.type||'').toLowerCase().includes(search)));renderTransactions(list,document.getElementById('transactionsList'))}
+
+function loadProfile(){const token=getToken();if(!token)return;try{const payload=JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));document.getElementById('profileEmail').value=payload.sub||'Not available';document.getElementById('profileRole').value=payload.role||'USER';document.getElementById('profileCircle').textContent=(payload.sub||'U').charAt(0).toUpperCase()}catch(e){console.error('Unable to read JWT',e)}}
+function logout(){localStorage.removeItem('token');localStorage.removeItem('walletId');allTransactions=[];document.getElementById('app').style.display='none';document.getElementById('authContainer').style.display='grid';showLogin();toast('Logged out successfully')}
+
+['loginEmail','loginPassword','registerName','registerEmail','registerPassword'].forEach(id=>document.getElementById(id)?.addEventListener('keydown',e=>{if(e.key==='Enter'){id.startsWith('login')?login():registerUser()}}));
+window.addEventListener('load',()=>{if(getToken())showApp()});
+</script>
+</body>
+</html>

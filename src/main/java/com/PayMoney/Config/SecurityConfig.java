@@ -34,7 +34,7 @@ public class SecurityConfig {
                             .requestMatchers(
                                     "/api/addusers",
                                     "/api/login",
-                                    "/payment.html",
+                                    "/index.html",
                                     "/paymoney-logo.png",
                                     "/swagger-ui/**",
                                     "/swagger-ui.html",
