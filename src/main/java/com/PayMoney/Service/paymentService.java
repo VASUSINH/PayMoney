@@ -38,6 +38,9 @@ public class paymentService {
     @Autowired
     private transactionRepository transactionRepository;
 
+    @Autowired
+    private auditLogService auditLogService;
+
     @Value("${razorpay.key.secret}")
     private String keySecret;
 
@@ -78,6 +81,13 @@ public class paymentService {
             payment.setCreatedAt(LocalDateTime.now());
 
             paymentRepository.save(payment);
+
+            auditLogService.log(
+                    user.getUserId(),
+                    "PAYMENT",
+                    "Created Razorpay payment order " + razorpayOrderId +
+                            " for amount " + amount
+            );
 
             return new paymentResponseDTO(
                     razorpayOrderId,
@@ -159,6 +169,8 @@ public class paymentService {
             payment.setStatus(paymentStatus.SUCCESS);
 
             paymentRepository.save(payment);
+
+
 
             wallet.setBalance(
                     wallet.getBalance().add(payment.getAmount()));
@@ -259,6 +271,12 @@ public class paymentService {
             transaction.setCreatedAt(LocalDateTime.now());
 
             transactionRepository.save(transaction);
+
+            auditLogService.log(
+                    payment.getUser().getUserId(),
+                    "REFUND",
+                    "Refunded payment of amount " + payment.getAmount()
+            );
 
             return true;
 

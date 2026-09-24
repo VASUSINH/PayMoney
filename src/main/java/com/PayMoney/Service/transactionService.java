@@ -41,6 +41,9 @@ public class transactionService {
     @Autowired
     private idempotencyRepository idempotencyRepository;
 
+    @Autowired
+    private auditLogService auditLogService;
+
     @Transactional
     public transferResponseDTO transfer(
             transferRequestDTO request,
@@ -154,6 +157,14 @@ public class transactionService {
 
         idempotencyRepository.save(idempotency);
 
+        auditLogService.log(
+                user.getUserId(),
+                "TRANSFER",
+                "Transferred " + request.getAmount() +
+                        " from wallet " + request.getSenderWalletId() +
+                        " to wallet " + request.getReceiverWalletId()
+        );
+
         return transactionMapper.toDTO(savedTransaction);
     }
 
@@ -243,6 +254,13 @@ public class transactionService {
         transactionEntity savedTransaction =
                 transactionRepository.save(transaction);
 
+        auditLogService.log(
+                user.getUserId(),
+                "DEPOSIT",
+                "Deposited " + amount +
+                        " to wallet " + wallet.getWalletId()
+        );
+
         return transactionMapper.toDTO(savedTransaction);
     }
 
@@ -280,6 +298,13 @@ public class transactionService {
 
         transactionEntity savedTransaction =
                 transactionRepository.save(transaction);
+
+        auditLogService.log(
+                user.getUserId(),
+                "WITHDRAW",
+                "Withdrew " + amount +
+                        " from wallet " + wallet.getWalletId()
+        );
 
         return transactionMapper.toDTO(savedTransaction);
     }

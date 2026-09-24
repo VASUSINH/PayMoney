@@ -20,6 +20,9 @@ public class walletService {
     @Autowired
     private authService authService;
 
+    @Autowired
+    private auditLogService auditLogService;
+
     //Fetch the wallet and view Balance
     public walletResponseDTO getMyWallet() {
 
