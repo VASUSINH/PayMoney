@@ -6,6 +6,7 @@
     <title>PayMoney — Digital Wallet</title>
     <link rel="icon" type="image/png" href="/paymoney-logo.png">
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
     <style>
         :root{--bg:#07111f;--panel:rgba(15,27,47,.78);--panel2:rgba(255,255,255,.055);--line:rgba(255,255,255,.09);--text:#f8fafc;--muted:#94a3b8;--blue:#38bdf8;--indigo:#6366f1;--green:#4ade80;--red:#fb7185;--yellow:#fbbf24;--shadow:0 24px 70px rgba(0,0,0,.32)}
         *{box-sizing:border-box;margin:0;padding:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -32,7 +33,7 @@
         select option{background:#0f172a;color:white}
         select option:checked{background:#1e293b;color:white}
 
-        /* TOAST + MODAL */
+        /* TOAST */
         #toastContainer{position:fixed;right:22px;bottom:22px;z-index:100;display:grid;gap:10px;width:min(360px,calc(100vw - 44px))}.toast{padding:13px 15px;border:1px solid var(--line);border-radius:13px;background:rgba(10,22,39,.92);backdrop-filter:blur(16px);box-shadow:var(--shadow);font-size:12px;animation:toastIn .3s ease}.toast.success-toast{border-color:rgba(74,222,128,.22)}.toast.error-toast{border-color:rgba(251,113,133,.25)}
 
         /* RESPONSIVE */
@@ -55,7 +56,7 @@
             .sidebar-brand,.logout-button{display:none}
             .nav{display:flex;width:100%;justify-content:space-around;gap:2px}
 
-            /* CHANGED: allows 7 mobile buttons to fit */
+            /* Mobile 7-button navigation */
             .nav-item{font-size:0;flex:1;max-width:48px;height:44px;padding:8px}
 
             .nav-item::after{font-size:18px}
@@ -65,8 +66,6 @@
             .nav-item:nth-child(4)::after{content:"↕"}
             .nav-item:nth-child(5)::after{content:"👤"}
             .nav-item:nth-child(6)::after{content:"❓"}
-
-            /* CHANGED: mobile logout icon */
             .mobile-logout-nav::after{content:"🚪"}
 
             .nav-item.active{background:rgba(56,189,248,.12)}
@@ -83,7 +82,11 @@
             .inline-actions{flex-direction:column}
         }
 
-        @keyframes spin{to{transform:rotate(360deg)}}@keyframes appear{from{opacity:0;transform:translateY(25px) scale(.97)}to{opacity:1;transform:none}}@keyframes screenIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}@keyframes toastIn{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}@keyframes float{50%{transform:translate(20px,-15px)}}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        @keyframes appear{from{opacity:0;transform:translateY(25px) scale(.97)}to{opacity:1;transform:none}}
+        @keyframes screenIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+        @keyframes toastIn{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}
+        @keyframes float{50%{transform:translate(20px,-15px)}}
     </style>
 </head>
 
@@ -92,71 +95,160 @@
 <div id="authContainer">
     <div class="auth-glow"></div>
     <div class="auth-card">
-        <div class="auth-badge"><span class="badge">SECURE DIGITAL WALLET</span></div>
+
+        <div class="auth-badge">
+            <span class="badge">SECURE DIGITAL WALLET</span>
+        </div>
+
         <div class="brand">Pay<span>Money</span></div>
         <p class="subtitle">Simple wallet & payment management</p>
 
         <div id="loginScreen">
-            <div class="field"><label class="label">Email</label><input id="loginEmail" type="email" autocomplete="email" placeholder="Enter your email"></div>
-            <div class="field"><label class="label">Password</label><div class="input-wrap"><input id="loginPassword" type="password" autocomplete="current-password" placeholder="Enter your password"><button class="toggle-password" type="button" onclick="togglePassword('loginPassword',this)">◉</button></div></div>
+
+            <div class="field">
+                <label class="label">Email</label>
+                <input id="loginEmail" type="email" autocomplete="email" placeholder="Enter your email">
+            </div>
+
+            <div class="field">
+                <label class="label">Password</label>
+                <div class="input-wrap">
+                    <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Enter your password">
+                    <button class="toggle-password" type="button" onclick="togglePassword('loginPassword',this)">◉</button>
+                </div>
+            </div>
+
             <button class="primary-button" id="loginButton" onclick="login()">Login</button>
             <div id="loginStatus" class="status"></div>
-            <div class="switch">Don't have an account? <button type="button" onclick="showRegister()">Register</button></div>
+
+            <div class="switch">
+                Don't have an account?
+                <button type="button" onclick="showRegister()">Register</button>
+            </div>
+
         </div>
 
         <div id="registerScreen" class="hidden">
-            <div class="field"><label class="label">Name</label><input id="registerName" type="text" autocomplete="name" placeholder="Your name"></div>
-            <div class="field"><label class="label">Email</label><input id="registerEmail" type="email" autocomplete="email" placeholder="Your email"></div>
-            <div class="field"><label class="label">Password</label><div class="input-wrap"><input id="registerPassword" type="password" autocomplete="new-password" placeholder="Minimum 8 characters"><button class="toggle-password" type="button" onclick="togglePassword('registerPassword',this)">◉</button></div></div>
+
+            <div class="field">
+                <label class="label">Name</label>
+                <input id="registerName" type="text" autocomplete="name" placeholder="Your name">
+            </div>
+
+            <div class="field">
+                <label class="label">Email</label>
+                <input id="registerEmail" type="email" autocomplete="email" placeholder="Your email">
+            </div>
+
+            <div class="field">
+                <label class="label">Password</label>
+                <div class="input-wrap">
+                    <input id="registerPassword" type="password" autocomplete="new-password" placeholder="Minimum 8 characters">
+                    <button class="toggle-password" type="button" onclick="togglePassword('registerPassword',this)">◉</button>
+                </div>
+            </div>
+
             <button class="primary-button" id="registerButton" onclick="registerUser()">Create Account</button>
             <div id="registerStatus" class="status"></div>
-            <div class="switch">Already have an account? <button type="button" onclick="showLogin()">Login</button></div>
+
+            <div class="switch">
+                Already have an account?
+                <button type="button" onclick="showLogin()">Login</button>
+            </div>
+
         </div>
     </div>
 </div>
 
+
 <div id="app">
 
     <aside class="sidebar">
+
         <div class="sidebar-brand">Pay<span>Money</span></div>
 
         <nav class="nav">
-            <button class="nav-item active" onclick="showScreen('dashboard',this)">🏠 Dashboard</button>
-            <button class="nav-item" onclick="showScreen('wallet',this)">💰 Wallet</button>
-            <button class="nav-item" onclick="showScreen('transfer',this)">↗ Send Money</button>
-            <button class="nav-item" onclick="showScreen('transactions',this)">↕ Transactions</button>
-            <button class="nav-item" onclick="showScreen('profile',this)">👤 Profile</button>
-            <button class="nav-item" onclick="showScreen('support',this)">❓ Support</button>
 
-            <!-- CHANGED: mobile logout -->
-            <button class="nav-item mobile-logout-nav" onclick="logout()">🚪 Logout</button>
+            <button class="nav-item active" onclick="showScreen('dashboard',this)">
+                🏠 Dashboard
+            </button>
+
+            <button class="nav-item" onclick="showScreen('wallet',this)">
+                💰 Wallet
+            </button>
+
+            <button class="nav-item" onclick="showScreen('transfer',this)">
+                ↗ Send Money
+            </button>
+
+            <button class="nav-item" onclick="showScreen('transactions',this)">
+                ↕ Transactions
+            </button>
+
+            <button class="nav-item" onclick="showScreen('profile',this)">
+                👤 Profile
+            </button>
+
+            <button class="nav-item" onclick="showScreen('support',this)">
+                ❓ Support
+            </button>
+
+            <!-- Mobile Logout -->
+            <button class="nav-item mobile-logout-nav" onclick="logout()">
+                🚪 Logout
+            </button>
+
         </nav>
 
         <button class="logout-button" onclick="logout()">🚪 Logout</button>
+
     </aside>
+
 
     <main class="main">
 
         <header class="topbar">
+
             <div class="welcome">
                 <h2 id="pageTitle">Dashboard</h2>
                 <p id="pageSubtitle">Manage your digital wallet</p>
             </div>
+
             <div class="profile-circle" id="profileCircle">U</div>
+
         </header>
 
+
         <section id="dashboard" class="screen active">
+
             <div class="balance-card">
+
                 <div class="balance-label">Available Balance</div>
-                <div class="balance" id="dashboardBalance">₹0.00</div>
+
+                <div class="balance" id="dashboardBalance">
+                    ₹0.00
+                </div>
+
                 <div class="balance-actions">
-                    <button class="small-button" onclick="showWallet()">+ Add Money</button>
-                    <button class="small-button" onclick="showWithdraw()">Withdraw</button>
-                    <button class="small-button" onclick="showTransfer()">Send Money</button>
+
+                    <button class="small-button" onclick="showWallet()">
+                        + Add Money
+                    </button>
+
+                    <button class="small-button" onclick="showWithdraw()">
+                        Withdraw
+                    </button>
+
+                    <button class="small-button" onclick="showTransfer()">
+                        Send Money
+                    </button>
+
                 </div>
             </div>
 
+
             <div class="grid grid-3">
+
                 <div class="stat-card" onclick="showWallet()">
                     <div class="stat-icon">💰</div>
                     <div class="stat-title">Wallet</div>
@@ -174,63 +266,113 @@
                     <div class="stat-title">Transactions</div>
                     <div class="stat-desc">Review your wallet activity</div>
                 </div>
+
             </div>
+
 
             <div class="panel" style="margin-top:16px">
+
                 <div class="recent-head">
                     <h3>Recent Transactions</h3>
-                    <button class="text-button" onclick="showTransactions()">View all →</button>
+                    <button class="text-button" onclick="showTransactions()">
+                        View all →
+                    </button>
                 </div>
-                <div id="recentTransactions"><div class="empty">Loading...</div></div>
+
+                <div id="recentTransactions">
+                    <div class="empty">Loading...</div>
+                </div>
+
             </div>
+
         </section>
 
+
         <section id="wallet" class="screen">
+
             <div class="panel" style="margin-bottom:16px">
+
                 <div class="muted small">WALLET BALANCE</div>
-                <div class="balance" id="walletBalance">₹0.00</div>
-                <div class="muted small">Wallet ID: <strong id="walletIdDisplay">—</strong></div>
+
+                <div class="balance" id="walletBalance">
+                    ₹0.00
+                </div>
+
+                <div class="muted small">
+                    Wallet ID: <strong id="walletIdDisplay">—</strong>
+                </div>
+
             </div>
+
 
             <div class="grid grid-3">
 
                 <div class="panel">
+
                     <h3>💳 Add Money</h3>
+
                     <div class="field">
                         <label class="label">Amount (INR)</label>
                         <input type="number" id="addMoneyAmount" min="1" max="50000" step="0.01" placeholder="1 — 50,000">
                     </div>
-                    <div class="limit-note">Maximum per payment: ₹50,000</div>
-                    <button class="primary-button" id="addMoneyButton" onclick="addMoney()">Add Money with Razorpay</button>
+
+                    <div class="limit-note">
+                        Maximum per payment: ₹50,000
+                    </div>
+
+                    <button class="primary-button" id="addMoneyButton" onclick="addMoney()">
+                        Add Money with Razorpay
+                    </button>
+
                     <div id="addMoneyStatus" class="status"></div>
+
                 </div>
 
+
                 <div class="panel">
+
                     <h3>💸 Withdraw Money</h3>
+
                     <div class="field">
                         <label class="label">Amount (INR)</label>
                         <input type="number" id="withdrawAmount" min="1" max="50000" step="0.01" placeholder="1 — 50,000">
                     </div>
-                    <div class="limit-note">Maximum per withdrawal: ₹50,000</div>
-                    <button class="primary-button" id="withdrawButton" onclick="withdrawMoney()">Withdraw</button>
+
+                    <div class="limit-note">
+                        Maximum per withdrawal: ₹50,000
+                    </div>
+
+                    <button class="primary-button" id="withdrawButton" onclick="withdrawMoney()">
+                        Withdraw
+                    </button>
+
                     <div id="withdrawStatus" class="status"></div>
+
                 </div>
 
+
                 <div class="panel">
+
                     <h3>ℹ️ Wallet Rules</h3>
+
                     <p class="muted small" style="line-height:1.8">
                         • Add Money uses Razorpay Test Mode.<br>
                         • Wallet operations require authentication.<br>
                         • Amount limit is enforced by the backend.<br>
                         • Successful operations appear in transaction history.
                     </p>
+
                 </div>
 
             </div>
+
         </section>
 
+
         <section id="transfer" class="screen">
+
             <div class="panel form-container">
+
                 <h3>↗ Send Money</h3>
 
                 <div class="field">
@@ -243,14 +385,23 @@
                     <input type="number" id="transferAmount" min="1" max="50000" step="0.01" placeholder="1 — 50,000">
                 </div>
 
-                <div class="limit-note">Maximum per transfer: ₹50,000 · Each request gets a unique idempotency key automatically.</div>
+                <div class="limit-note">
+                    Maximum per transfer: ₹50,000 · Each request gets a unique idempotency key automatically.
+                </div>
 
-                <button class="primary-button" id="transferButton" onclick="transferMoney()">Send Money</button>
+                <button class="primary-button" id="transferButton" onclick="transferMoney()">
+                    Send Money
+                </button>
+
                 <div id="transferStatus" class="status"></div>
+
             </div>
+
         </section>
 
+
         <section id="transactions" class="screen">
+
             <div class="panel">
 
                 <div class="recent-head">
@@ -259,7 +410,11 @@
                 </div>
 
                 <div class="toolbar">
-                    <input id="transactionSearch" type="search" placeholder="Search transaction type..." oninput="applyTransactionFilter">
+
+                    <input id="transactionSearch"
+                           type="search"
+                           placeholder="Search transaction type..."
+                           oninput="applyTransactionFilter()">
 
                     <select id="transactionFilter" class="filter" onchange="applyTransactionFilter()">
                         <option value="ALL">All types</option>
@@ -268,14 +423,22 @@
                         <option value="TRANSFER">Transfers</option>
                         <option value="REFUND">Refunds</option>
                     </select>
+
                 </div>
 
-                <div id="transactionsList"><div class="empty">Loading transactions...</div></div>
+                <div id="transactionsList">
+                    <div class="empty">Loading transactions...</div>
+                </div>
+
             </div>
+
         </section>
 
+
         <section id="profile" class="screen">
+
             <div class="panel form-container">
+
                 <h3>👤 My Profile</h3>
 
                 <div class="field">
@@ -284,6 +447,7 @@
                 </div>
 
                 <div class="form-row">
+
                     <div class="field">
                         <label class="label">Role</label>
                         <input id="profileRole" readonly>
@@ -293,6 +457,7 @@
                         <label class="label">Wallet ID</label>
                         <input id="profileWalletId" readonly>
                     </div>
+
                 </div>
 
                 <div class="field">
@@ -301,226 +466,548 @@
                 </div>
 
                 <p class="muted small" style="line-height:1.6">
-                    Your account information is derived from the authenticated JWT session. Logout removes the local session token.
+                    Your account information is derived from the authenticated JWT session.
+                    Logout removes the local session token.
                 </p>
+
             </div>
+
         </section>
 
+
         <section id="support" class="screen">
+
             <div class="grid grid-3">
 
                 <div class="panel">
+
                     <h3>💳 Payment</h3>
+
                     <p class="muted small" style="line-height:1.7">
-                        Add Money opens Razorpay Test Mode. After checkout, PayMoney verifies the Razorpay signature before crediting the wallet.
+                        Add Money opens Razorpay Test Mode.
+                        After checkout, PayMoney verifies the Razorpay signature before crediting the wallet.
                     </p>
+
                 </div>
 
+
                 <div class="panel">
+
                     <h3>🔐 Security</h3>
+
                     <p class="muted small" style="line-height:1.7">
-                        Protected APIs use JWT authentication. Transfers also use wallet ownership validation, transactional processing, locking and idempotency.
+                        Protected APIs use JWT authentication.
+                        Transfers also use wallet ownership validation,
+                        transactional processing, locking and idempotency.
                     </p>
+
                 </div>
 
+
                 <div class="panel">
+
                     <h3>💰 Limits</h3>
+
                     <p class="muted small" style="line-height:1.7">
                         Deposit, withdrawal and transfer requests are limited to ₹50,000 per transaction by the backend validation rules.
                     </p>
+
                 </div>
 
             </div>
+
         </section>
 
     </main>
+
 </div>
 
 <div id="toastContainer"></div>
 
+
 <script>
-    const API={login:'/api/login',register:'/api/addusers',wallet:'/api/wallet',withdraw:'/api/wallet/withdraw',transfer:'/api/transactions/transfer',transactions:'/api/transactions/wallet'};
+
+    /* =================================================
+       RENDER BACKEND
+       ================================================= */
+
+    const BASE_URL='https://paymoney-backend-ybl6.onrender.com';
+
+    const API={
+        login:BASE_URL+'/api/login',
+        register:BASE_URL+'/api/addusers',
+        wallet:BASE_URL+'/api/wallet',
+        withdraw:BASE_URL+'/api/wallet/withdraw',
+        transfer:BASE_URL+'/api/transactions/transfer',
+        transactions:BASE_URL+'/api/transactions/wallet'
+    };
+
     const MAX_AMOUNT=50000,MIN_AMOUNT=1;
+
     let allTransactions=[];
 
-    function getToken(){return localStorage.getItem('token')}
-    function authHeaders(){return {'Content-Type':'application/json','Authorization':'Bearer '+getToken()}}
-    function escapeHtml(value){return String(value??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
-    function togglePassword(id,btn){const input=document.getElementById(id);input.type=input.type==='password'?'text':'password';btn.textContent=input.type==='password'?'◉':'◌'}
-    function setButtonLoading(id,loading,label){const b=document.getElementById(id);if(!b)return;if(loading){b.disabled=true;b.dataset.label=b.textContent;b.innerHTML='<span class="loader"></span>'+label}else{b.disabled=false;b.textContent=b.dataset.label||label}}
-    function setStatus(id,message,type='info'){const el=document.getElementById(id);if(el)el.innerHTML=message?'<span class="'+type+'">'+escapeHtml(message)+'</span>':''}
-    function toast(message,type='success'){const box=document.createElement('div');box.className='toast '+(type==='success'?'success-toast':'error-toast');box.textContent=message;document.getElementById('toastContainer').appendChild(box);setTimeout(()=>box.remove(),3800)}
 
-    async function readResponse(response,fallback='Request failed'){
-        const text=await response.text();
-        if(!text)return fallback;
-        try{
-            const data=JSON.parse(text);
-            if(typeof data==='string')return friendlyError(data,fallback);
-            if(data.message)return friendlyError(data.message,fallback);
-            const values=Object.entries(data).map(([k,v])=>k+': '+v);
-            return friendlyError(values.join(' · ')||fallback,fallback);
-        }catch{return friendlyError(text,fallback)}
+    function getToken(){
+        return localStorage.getItem('token')
     }
 
+
+    function authHeaders(){
+        return {
+            'Content-Type':'application/json',
+            'Authorization':'Bearer '+getToken()
+        }
+    }
+
+
+    function escapeHtml(value){
+        return String(value??'').replace(/[&<>'"]/g,c=>({
+            '&':'&amp;',
+            '<':'&lt;',
+            '>':'&gt;',
+            "'":'&#39;',
+            '"':'&quot;'
+        }[c]))
+    }
+
+
+    function togglePassword(id,btn){
+        const input=document.getElementById(id);
+        input.type=input.type==='password'?'text':'password';
+        btn.textContent=input.type==='password'?'◉':'◌'
+    }
+
+
+    function setButtonLoading(id,loading,label){
+        const b=document.getElementById(id);
+        if(!b)return;
+
+        if(loading){
+            b.disabled=true;
+            b.dataset.label=b.textContent;
+            b.innerHTML='<span class="loader"></span>'+label
+        }else{
+            b.disabled=false;
+            b.textContent=b.dataset.label||label
+        }
+    }
+
+
+    function setStatus(id,message,type='info'){
+        const el=document.getElementById(id);
+
+        if(el)
+            el.innerHTML=message
+                ?'<span class="'+type+'">'+escapeHtml(message)+'</span>'
+                :''
+    }
+
+
+    function toast(message,type='success'){
+        const box=document.createElement('div');
+
+        box.className='toast '+(type==='success'
+            ?'success-toast'
+            :'error-toast');
+
+        box.textContent=message;
+
+        document.getElementById('toastContainer').appendChild(box);
+
+        setTimeout(()=>box.remove(),3800)
+    }
+
+
+    async function readResponse(response,fallback='Request failed'){
+
+        const text=await response.text();
+
+        if(!text)return fallback;
+
+        try{
+
+            const data=JSON.parse(text);
+
+            if(typeof data==='string')
+                return friendlyError(data,fallback);
+
+            if(data.message)
+                return friendlyError(data.message,fallback);
+
+            const values=Object.entries(data)
+                .map(([k,v])=>k+': '+v);
+
+            return friendlyError(
+                values.join(' · ')||fallback,
+                fallback
+            );
+
+        }catch{
+            return friendlyError(text,fallback)
+        }
+    }
+
+
     function friendlyError(message,fallback='Request failed'){
+
         const raw=String(message||'').trim();
+
         if(!raw)return fallback;
+
         const lower=raw.toLowerCase();
 
-        if(lower.includes('failed to fetch')||lower.includes('networkerror'))
+
+        if(lower.includes('failed to fetch')||
+            lower.includes('networkerror'))
+
             return 'Unable to connect to PayMoney. Make sure the backend is running.';
 
-        if(lower.includes('user not found')||lower.includes('user not registered')||
-            lower.includes('email not found')||lower.includes('email does not exist')||
+
+        if(lower.includes('user not found')||
+            lower.includes('user not registered')||
+            lower.includes('email not found')||
+            lower.includes('email does not exist')||
             lower.includes('account not found'))
+
             return 'Email is not registered.';
 
-        if(lower.includes('invalid password')||lower.includes('password does not match')||
-            lower.includes('incorrect password')||lower.includes('wrong password'))
+
+        if(lower.includes('invalid password')||
+            lower.includes('password does not match')||
+            lower.includes('incorrect password')||
+            lower.includes('wrong password'))
+
             return 'Password does not match.';
 
+
         if(lower.includes('invalid email or password'))
+
             return 'Email or password is incorrect.';
 
-        if(lower.includes('already registered')||lower.includes('email already exists')||
-            lower.includes('email already exist')||lower.includes('duplicate key')||
+
+        if(lower.includes('already registered')||
+            lower.includes('email already exists')||
+            lower.includes('email already exist')||
+            lower.includes('duplicate key')||
             lower.includes('unique constraint'))
+
             return 'Email is already registered.';
 
+
         if(lower.includes('must be less than or equal to 50000')||
-            lower.includes('less than or equal to 50000')||lower.includes('maximum amount'))
+            lower.includes('less than or equal to 50000')||
+            lower.includes('maximum amount'))
+
             return 'Amount is not allowed. The maximum per transaction is ₹50,000.';
 
+
         if(lower.includes('insufficient balance'))
+
             return 'Withdrawal/transfer cannot be completed because your wallet balance is insufficient.';
 
+
         if(lower.includes('wallet not found'))
+
             return 'Wallet not found for this account.';
 
+
         if(lower.includes('same wallet'))
+
             return 'You cannot transfer money to the same wallet.';
 
+
         if(lower.includes('sender wallet does not belong'))
+
             return 'This wallet does not belong to your account.';
 
-        if(lower.includes('receiver wallet')&&lower.includes('not found'))
+
+        if(lower.includes('receiver wallet')&&
+            lower.includes('not found'))
+
             return 'Receiver wallet was not found.';
 
+
         if(lower.includes('transaction flagged for fraud'))
+
             return 'This transaction was blocked because it was flagged for fraud review.';
 
+
         if(lower.includes('idempotency key belongs to another user'))
+
             return 'This transaction request key belongs to another user.';
+
 
         return raw;
     }
 
+
     function validateAmount(value){
+
         const amount=Number(value);
-        if(!Number.isFinite(amount)||amount<MIN_AMOUNT)return 'Enter an amount of at least ₹1.';
-        if(amount>MAX_AMOUNT)return 'Amount is not allowed. The maximum per transaction is ₹50,000.';
+
+        if(!Number.isFinite(amount)||amount<MIN_AMOUNT)
+            return 'Enter an amount of at least ₹1.';
+
+        if(amount>MAX_AMOUNT)
+            return 'Amount is not allowed. The maximum per transaction is ₹50,000.';
+
         return null
     }
 
+
     function showRegister(){
+
         document.getElementById('loginScreen').classList.add('hidden');
-        document.getElementById('registerScreen').classList.remove('hidden');
+
+        document.getElementById('registerScreen')
+            .classList.remove('hidden');
+
         setStatus('loginStatus','')
     }
 
+
     function showLogin(){
-        document.getElementById('registerScreen').classList.add('hidden');
-        document.getElementById('loginScreen').classList.remove('hidden');
+
+        document.getElementById('registerScreen')
+            .classList.add('hidden');
+
+        document.getElementById('loginScreen')
+            .classList.remove('hidden');
+
         setStatus('registerStatus','')
     }
 
+
     async function registerUser(){
-        const name=document.getElementById('registerName').value.trim(),
-            email=document.getElementById('registerEmail').value.trim(),
-            password=document.getElementById('registerPassword').value,
-            status='registerStatus';
+
+        const name=document.getElementById('registerName').value.trim();
+
+        const email=document.getElementById('registerEmail').value.trim();
+
+        const password=document.getElementById('registerPassword').value;
+
+        const status='registerStatus';
+
 
         if(!name||!email||!password){
-            setStatus(status,'Please fill all fields.','error');
+
+            setStatus(
+                status,
+                'Please fill all fields.',
+                'error'
+            );
+
             return
         }
+
 
         if(password.length<8){
-            setStatus(status,'Password must contain at least 8 characters.','error');
+
+            setStatus(
+                status,
+                'Password must contain at least 8 characters.',
+                'error'
+            );
+
             return
         }
 
-        setButtonLoading('registerButton',true,'Creating account...');
-        setStatus(status,'Creating your account...','info');
+
+        setButtonLoading(
+            'registerButton',
+            true,
+            'Creating account...'
+        );
+
+        setStatus(
+            status,
+            'Creating your account...',
+            'info'
+        );
+
 
         try{
+
             const r=await fetch(API.register,{
                 method:'POST',
-                headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({name,email,password})
+                headers:{
+                    'Content-Type':'application/json'
+                },
+                body:JSON.stringify({
+                    name,
+                    email,
+                    password
+                })
             });
 
-            if(!r.ok)throw new Error(await readResponse(r,'Registration failed'));
 
-            setStatus(status,'Account created successfully. Redirecting to login...','success');
+            if(!r.ok)
+                throw new Error(
+                    await readResponse(r,'Registration failed')
+                );
+
+
+            setStatus(
+                status,
+                'Account created successfully. Redirecting to login...',
+                'success'
+            );
+
+
             document.getElementById('loginEmail').value=email;
+
             document.getElementById('loginPassword').value='';
+
             setTimeout(showLogin,900)
+
+
         }catch(e){
-            setStatus(status,friendlyError(e.message,'Registration failed'),'error')
+
+            setStatus(
+                status,
+                friendlyError(e.message,'Registration failed'),
+                'error'
+            )
+
         }finally{
-            setButtonLoading('registerButton',false,'Create Account')
+
+            setButtonLoading(
+                'registerButton',
+                false,
+                'Create Account'
+            )
+
         }
+
     }
 
+
     async function login(){
-        const email=document.getElementById('loginEmail').value.trim(),
-            password=document.getElementById('loginPassword').value;
+
+        const email=document.getElementById('loginEmail').value.trim();
+
+        const password=document.getElementById('loginPassword').value;
+
 
         if(!email||!password){
-            setStatus('loginStatus','Enter email and password.','error');
+
+            setStatus(
+                'loginStatus',
+                'Enter email and password.',
+                'error'
+            );
+
             return
         }
 
-        setButtonLoading('loginButton',true,'Signing in...');
-        setStatus('loginStatus','Authenticating...','info');
+
+        setButtonLoading(
+            'loginButton',
+            true,
+            'Signing in...'
+        );
+
+        setStatus(
+            'loginStatus',
+            'Authenticating...',
+            'info'
+        );
+
 
         try{
+
             const r=await fetch(API.login,{
                 method:'POST',
-                headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({email,password})
+                headers:{
+                    'Content-Type':'application/json'
+                },
+                body:JSON.stringify({
+                    email,
+                    password
+                })
             });
 
-            if(!r.ok)throw new Error(await readResponse(r,'Email or password is incorrect.'));
+
+            if(!r.ok)
+                throw new Error(
+                    await readResponse(
+                        r,
+                        'Email or password is incorrect.'
+                    )
+                );
+
 
             const data=await r.json();
 
-            if(!data.token)throw new Error('Authentication token was not returned.');
 
-            localStorage.setItem('token',data.token);
+            if(!data.token)
+                throw new Error(
+                    'Authentication token was not returned.'
+                );
+
+
+            localStorage.setItem(
+                'token',
+                data.token
+            );
+
             showApp();
+
             toast('Welcome back!')
+
+
         }catch(e){
-            setStatus('loginStatus',friendlyError(e.message,'Email or password is incorrect.'),'error')
+
+            setStatus(
+                'loginStatus',
+                friendlyError(
+                    e.message,
+                    'Email or password is incorrect.'
+                ),
+                'error'
+            )
+
         }finally{
-            setButtonLoading('loginButton',false,'Login')
+
+            setButtonLoading(
+                'loginButton',
+                false,
+                'Login'
+            )
+
         }
+
     }
 
+
     function showApp(){
-        document.getElementById('authContainer').style.display='none';
-        document.getElementById('app').style.display='block';
+
+        document.getElementById('authContainer')
+            .style.display='none';
+
+        document.getElementById('app')
+            .style.display='block';
+
         loadProfile();
+
         loadWallet()
     }
 
+
     function showScreen(name,element){
-        document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-        document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-        document.getElementById(name).classList.add('active');
-        if(element)element.classList.add('active');
+
+        document.querySelectorAll('.screen')
+            .forEach(s=>s.classList.remove('active'));
+
+        document.querySelectorAll('.nav-item')
+            .forEach(n=>n.classList.remove('active'));
+
+        document.getElementById(name)
+            .classList.add('active');
+
+        if(element)
+            element.classList.add('active');
+
 
         const titles={
             dashboard:'Dashboard',
@@ -531,6 +1018,7 @@
             support:'Support'
         };
 
+
         const subs={
             dashboard:'Manage your digital wallet',
             wallet:'Manage your wallet',
@@ -540,346 +1028,930 @@
             support:'PayMoney help center'
         };
 
-        document.getElementById('pageTitle').textContent=titles[name];
-        document.getElementById('pageSubtitle').textContent=subs[name];
 
-        if(name==='transactions')loadTransactions()
+        document.getElementById('pageTitle')
+            .textContent=titles[name];
+
+        document.getElementById('pageSubtitle')
+            .textContent=subs[name];
+
+
+        if(name==='transactions')
+            loadTransactions()
     }
+
 
     function nav(index,name){
-        showScreen(name,document.querySelectorAll('.nav-item')[index])
+
+        showScreen(
+            name,
+            document.querySelectorAll('.nav-item')[index]
+        )
+
     }
 
-    function showWallet(){nav(1,'wallet')}
-    function showTransfer(){nav(2,'transfer')}
-    function showTransactions(){nav(3,'transactions')}
-    function showWithdraw(){
-        showWallet();
-        setTimeout(()=>document.getElementById('withdrawAmount').focus(),150)
+
+    function showWallet(){
+        nav(1,'wallet')
     }
+
+
+    function showTransfer(){
+        nav(2,'transfer')
+    }
+
+
+    function showTransactions(){
+        nav(3,'transactions')
+    }
+
+
+    function showWithdraw(){
+
+        showWallet();
+
+        setTimeout(
+            ()=>document.getElementById('withdrawAmount').focus(),
+            150
+        )
+
+    }
+
 
     async function loadWallet(){
+
         try{
-            const r=await fetch(API.wallet,{headers:authHeaders()});
+
+            const r=await fetch(
+                API.wallet,
+                {
+                    headers:authHeaders()
+                }
+            );
+
 
             if(r.status===401){
+
                 logout();
+
                 return
             }
 
-            if(!r.ok)throw new Error(await readResponse(r,'Unable to load wallet'));
 
-            const wallet=await r.json(),
-                balance=Number(wallet.balance||0),
-                id=wallet.walletId;
+            if(!r.ok)
+                throw new Error(
+                    await readResponse(
+                        r,
+                        'Unable to load wallet'
+                    )
+                );
 
-            document.getElementById('dashboardBalance').textContent='₹'+balance.toFixed(2);
-            document.getElementById('walletBalance').textContent='₹'+balance.toFixed(2);
-            document.getElementById('walletIdDisplay').textContent=id??'—';
-            document.getElementById('profileWalletId').value=id??'Not available';
 
-            if(id!=null)localStorage.setItem('walletId',id);
+            const wallet=await r.json();
+
+            const balance=Number(wallet.balance||0);
+
+            const id=wallet.walletId;
+
+
+            document.getElementById('dashboardBalance')
+                .textContent='₹'+balance.toFixed(2);
+
+            document.getElementById('walletBalance')
+                .textContent='₹'+balance.toFixed(2);
+
+            document.getElementById('walletIdDisplay')
+                .textContent=id??'—';
+
+            document.getElementById('profileWalletId')
+                .value=id??'Not available';
+
+
+            if(id!=null)
+                localStorage.setItem('walletId',id);
+
 
             loadTransactions()
+
+
         }catch(e){
+
             console.error(e);
+
             toast(e.message,'error')
+
         }
+
     }
+
 
     async function addMoney(){
-        const input=document.getElementById('addMoneyAmount'),
-            amount=Number(input.value),
-            error=validateAmount(input.value);
 
-        if(error){
-            setStatus('addMoneyStatus',error,'error');
-            return
-        }
-
-        setButtonLoading('addMoneyButton',true,'Opening checkout...');
-        setStatus('addMoneyStatus','Creating secure payment order...','info');
-
-        try{
-            const r=await fetch('/api/payments/create-order',{
-                method:'POST',
-                headers:authHeaders(),
-                body:JSON.stringify({amount})
-            });
-
-            if(!r.ok)throw new Error(await readResponse(r,'Unable to create payment order'));
-
-            const order=await r.json();
-
-            if(!window.Razorpay)throw new Error('Razorpay Checkout could not be loaded.');
-
-            const options={
-                key:'rzp_test_TdxakRD4r7EGTJ',
-                amount:Number(order.amount)*100,
-                currency:order.currency,
-                name:'PayMoney',
-                description:'Add Money to Wallet',
-                order_id:order.orderId,
-                handler:verifyPayment,
-                theme:{color:'#6366f1'},
-                modal:{
-                    ondismiss:()=>{
-                        setStatus('addMoneyStatus','Payment window closed. No wallet change was made.','info');
-                        setButtonLoading('addMoneyButton',false,'Add Money with Razorpay')
-                    }
-                }
-            };
-
-            const razorpay=new Razorpay(options);
-
-            razorpay.on('payment.failed',()=>{
-                setStatus('addMoneyStatus','Payment failed. Your wallet was not credited.','error');
-                setButtonLoading('addMoneyButton',false,'Add Money with Razorpay')
-            });
-
-            razorpay.open()
-        }catch(e){
-            setStatus('addMoneyStatus',e.message,'error');
-            setButtonLoading('addMoneyButton',false,'Add Money with Razorpay')
-        }
-    }
-
-    async function verifyPayment(response){
-        setStatus('addMoneyStatus','Verifying payment signature and crediting wallet...','info');
-
-        try{
-            const r=await fetch('/api/payments/verify',{
-                method:'POST',
-                headers:authHeaders(),
-                body:JSON.stringify({
-                    razorpayPaymentId:response.razorpay_payment_id,
-                    razorpayOrderId:response.razorpay_order_id,
-                    razorpaySignature:response.razorpay_signature
-                })
-            });
-
-            if(!r.ok)throw new Error(await readResponse(r,'Payment verification failed'));
-
-            setStatus('addMoneyStatus','✓ Payment verified. Wallet credited successfully.','success');
-            document.getElementById('addMoneyAmount').value='';
-            toast('Wallet credited successfully');
-            await loadWallet()
-        }catch(e){
-            setStatus('addMoneyStatus',e.message,'error');
-            toast(e.message,'error')
-        }finally{
-            setButtonLoading('addMoneyButton',false,'Add Money with Razorpay')
-        }
-    }
-
-    async function withdrawMoney(){
-        const input=document.getElementById('withdrawAmount'),
-            error=validateAmount(input.value);
-
-        if(error){
-            setStatus('withdrawStatus',error,'error');
-            return
-        }
+        const input=document.getElementById('addMoneyAmount');
 
         const amount=Number(input.value);
 
-        setButtonLoading('withdrawButton',true,'Processing...');
-        setStatus('withdrawStatus','Processing withdrawal...','info');
+        const error=validateAmount(input.value);
 
-        try{
-            const r=await fetch(API.withdraw,{
-                method:'POST',
-                headers:authHeaders(),
-                body:JSON.stringify({amount})
-            });
 
-            if(!r.ok)throw new Error(await readResponse(r,'Withdrawal failed'));
+        if(error){
 
-            setStatus('withdrawStatus','✓ Withdrawal successful.','success');
-            input.value='';
-            toast('Withdrawal completed');
-            await loadWallet()
-        }catch(e){
-            setStatus('withdrawStatus',e.message,'error');
-            toast(e.message,'error')
-        }finally{
-            setButtonLoading('withdrawButton',false,'Withdraw')
-        }
-    }
+            setStatus(
+                'addMoneyStatus',
+                error,
+                'error'
+            );
 
-    async function transferMoney(){
-        const receiver=Number(document.getElementById('receiverWalletId').value),
-            amount=Number(document.getElementById('transferAmount').value);
-
-        if(!Number.isInteger(receiver)||receiver<1){
-            setStatus('transferStatus','Enter a valid receiver wallet ID.','error');
             return
         }
+
+
+        setButtonLoading(
+            'addMoneyButton',
+            true,
+            'Opening checkout...'
+        );
+
+        setStatus(
+            'addMoneyStatus',
+            'Creating secure payment order...',
+            'info'
+        );
+
+
+        try{
+
+            const r=await fetch(
+                BASE_URL+'/api/payments/create-order',
+                {
+                    method:'POST',
+                    headers:authHeaders(),
+                    body:JSON.stringify({
+                        amount
+                    })
+                }
+            );
+
+
+            if(!r.ok)
+                throw new Error(
+                    await readResponse(
+                        r,
+                        'Unable to create payment order'
+                    )
+                );
+
+
+            const order=await r.json();
+
+
+            if(!window.Razorpay)
+                throw new Error(
+                    'Razorpay Checkout could not be loaded.'
+                );
+
+
+            const options={
+
+                key:'rzp_test_TdxakRD4r7EGTJ',
+
+                amount:Number(order.amount)*100,
+
+                currency:order.currency,
+
+                name:'PayMoney',
+
+                description:'Add Money to Wallet',
+
+                order_id:order.orderId,
+
+                handler:verifyPayment,
+
+                theme:{
+                    color:'#6366f1'
+                },
+
+                modal:{
+
+                    ondismiss:()=>{
+
+                        setStatus(
+                            'addMoneyStatus',
+                            'Payment window closed. No wallet change was made.',
+                            'info'
+                        );
+
+                        setButtonLoading(
+                            'addMoneyButton',
+                            false,
+                            'Add Money with Razorpay'
+                        )
+
+                    }
+
+                }
+
+            };
+
+
+            const razorpay=new Razorpay(options);
+
+
+            razorpay.on(
+                'payment.failed',
+                ()=>{
+
+                    setStatus(
+                        'addMoneyStatus',
+                        'Payment failed. Your wallet was not credited.',
+                        'error'
+                    );
+
+                    setButtonLoading(
+                        'addMoneyButton',
+                        false,
+                        'Add Money with Razorpay'
+                    )
+
+                }
+            );
+
+
+            razorpay.open()
+
+
+        }catch(e){
+
+            setStatus(
+                'addMoneyStatus',
+                e.message,
+                'error'
+            );
+
+            setButtonLoading(
+                'addMoneyButton',
+                false,
+                'Add Money with Razorpay'
+            )
+
+        }
+
+    }
+
+
+    async function verifyPayment(response){
+
+        setStatus(
+            'addMoneyStatus',
+            'Verifying payment signature and crediting wallet...',
+            'info'
+        );
+
+
+        try{
+
+            const r=await fetch(
+                BASE_URL+'/api/payments/verify',
+                {
+                    method:'POST',
+                    headers:authHeaders(),
+                    body:JSON.stringify({
+
+                        razorpayPaymentId:
+                        response.razorpay_payment_id,
+
+                        razorpayOrderId:
+                        response.razorpay_order_id,
+
+                        razorpaySignature:
+                        response.razorpay_signature
+
+                    })
+                }
+            );
+
+
+            if(!r.ok)
+                throw new Error(
+                    await readResponse(
+                        r,
+                        'Payment verification failed'
+                    )
+                );
+
+
+            setStatus(
+                'addMoneyStatus',
+                '✓ Payment verified. Wallet credited successfully.',
+                'success'
+            );
+
+
+            document.getElementById(
+                'addMoneyAmount'
+            ).value='';
+
+
+            toast('Wallet credited successfully');
+
+            await loadWallet()
+
+
+        }catch(e){
+
+            setStatus(
+                'addMoneyStatus',
+                e.message,
+                'error'
+            );
+
+            toast(
+                e.message,
+                'error'
+            )
+
+        }finally{
+
+            setButtonLoading(
+                'addMoneyButton',
+                false,
+                'Add Money with Razorpay'
+            )
+
+        }
+
+    }
+
+
+    async function withdrawMoney(){
+
+        const input=document.getElementById('withdrawAmount');
+
+        const error=validateAmount(input.value);
+
+
+        if(error){
+
+            setStatus(
+                'withdrawStatus',
+                error,
+                'error'
+            );
+
+            return
+        }
+
+
+        const amount=Number(input.value);
+
+
+        setButtonLoading(
+            'withdrawButton',
+            true,
+            'Processing...'
+        );
+
+        setStatus(
+            'withdrawStatus',
+            'Processing withdrawal...',
+            'info'
+        );
+
+
+        try{
+
+            const r=await fetch(
+                API.withdraw,
+                {
+                    method:'POST',
+                    headers:authHeaders(),
+                    body:JSON.stringify({
+                        amount
+                    })
+                }
+            );
+
+
+            if(!r.ok)
+                throw new Error(
+                    await readResponse(
+                        r,
+                        'Withdrawal failed'
+                    )
+                );
+
+
+            setStatus(
+                'withdrawStatus',
+                '✓ Withdrawal successful.',
+                'success'
+            );
+
+
+            input.value='';
+
+            toast('Withdrawal completed');
+
+            await loadWallet()
+
+
+        }catch(e){
+
+            setStatus(
+                'withdrawStatus',
+                e.message,
+                'error'
+            );
+
+            toast(
+                e.message,
+                'error'
+            )
+
+        }finally{
+
+            setButtonLoading(
+                'withdrawButton',
+                false,
+                'Withdraw'
+            )
+
+        }
+
+    }
+
+
+    async function transferMoney(){
+
+        const receiver=Number(
+            document.getElementById('receiverWalletId').value
+        );
+
+        const amount=Number(
+            document.getElementById('transferAmount').value
+        );
+
+
+        if(!Number.isInteger(receiver)||receiver<1){
+
+            setStatus(
+                'transferStatus',
+                'Enter a valid receiver wallet ID.',
+                'error'
+            );
+
+            return
+        }
+
 
         const amountError=validateAmount(amount);
 
+
         if(amountError){
-            setStatus('transferStatus',amountError,'error');
+
+            setStatus(
+                'transferStatus',
+                amountError,
+                'error'
+            );
+
             return
         }
 
-        const walletId=localStorage.getItem('walletId');
+
+        const walletId=
+            localStorage.getItem('walletId');
+
 
         if(!walletId){
-            setStatus('transferStatus','Your wallet could not be identified. Refresh and try again.','error');
+
+            setStatus(
+                'transferStatus',
+                'Your wallet could not be identified. Refresh and try again.',
+                'error'
+            );
+
             return
         }
+
 
         const key=crypto.randomUUID();
 
-        setButtonLoading('transferButton',true,'Transferring...');
-        setStatus('transferStatus','Validating wallet and processing transfer...','info');
+
+        setButtonLoading(
+            'transferButton',
+            true,
+            'Transferring...'
+        );
+
+        setStatus(
+            'transferStatus',
+            'Validating wallet and processing transfer...',
+            'info'
+        );
+
 
         try{
-            const r=await fetch(API.transfer,{
-                method:'POST',
-                headers:{...authHeaders(),'Idempotency-Key':key},
-                body:JSON.stringify({
-                    senderWalletId:Number(walletId),
-                    receiverWalletId:receiver,
-                    amount
-                })
-            });
 
-            if(!r.ok)throw new Error(await readResponse(r,'Transfer failed'));
+            const r=await fetch(
+                API.transfer,
+                {
+                    method:'POST',
 
-            document.getElementById('receiverWalletId').value='';
-            document.getElementById('transferAmount').value='';
+                    headers:{
+                        ...authHeaders(),
+                        'Idempotency-Key':key
+                    },
 
-            setStatus('transferStatus','✓ Money transferred successfully.','success');
-            toast('Transfer completed successfully');
+                    body:JSON.stringify({
+
+                        senderWalletId:Number(walletId),
+
+                        receiverWalletId:receiver,
+
+                        amount
+
+                    })
+
+                }
+            );
+
+
+            if(!r.ok)
+                throw new Error(
+                    await readResponse(
+                        r,
+                        'Transfer failed'
+                    )
+                );
+
+
+            document.getElementById(
+                'receiverWalletId'
+            ).value='';
+
+            document.getElementById(
+                'transferAmount'
+            ).value='';
+
+
+            setStatus(
+                'transferStatus',
+                '✓ Money transferred successfully.',
+                'success'
+            );
+
+
+            toast(
+                'Transfer completed successfully'
+            );
+
 
             await loadWallet()
+
+
         }catch(e){
-            setStatus('transferStatus',e.message,'error');
-            toast(e.message,'error')
+
+            setStatus(
+                'transferStatus',
+                e.message,
+                'error'
+            );
+
+            toast(
+                e.message,
+                'error'
+            )
+
         }finally{
-            setButtonLoading('transferButton',false,'Send Money')
+
+            setButtonLoading(
+                'transferButton',
+                false,
+                'Send Money'
+            )
+
         }
+
     }
 
+
     async function loadTransactions(){
-        const walletId=localStorage.getItem('walletId');
+
+        const walletId=
+            localStorage.getItem('walletId');
+
 
         if(!walletId)return;
 
-        const container=document.getElementById('transactionsList'),
-            recent=document.getElementById('recentTransactions');
+
+        const container=
+            document.getElementById('transactionsList');
+
+        const recent=
+            document.getElementById('recentTransactions');
+
 
         try{
-            const r=await fetch(API.transactions+'/'+encodeURIComponent(walletId),{
-                headers:authHeaders()
-            });
+
+            const r=await fetch(
+                API.transactions+'/'+
+                encodeURIComponent(walletId),
+                {
+                    headers:authHeaders()
+                }
+            );
+
 
             if(r.status===401){
+
                 logout();
+
                 return
             }
 
-            if(!r.ok)throw new Error(await readResponse(r,'Unable to load transactions'));
+
+            if(!r.ok)
+                throw new Error(
+                    await readResponse(
+                        r,
+                        'Unable to load transactions'
+                    )
+                );
+
 
             allTransactions=await r.json();
 
-            renderTransactions(allTransactions,container);
-            renderTransactions(allTransactions.slice(0,5),recent)
+
+            renderTransactions(
+                allTransactions,
+                container
+            );
+
+
+            renderTransactions(
+                allTransactions.slice(0,5),
+                recent
+            )
+
+
         }catch(e){
+
             console.error(e);
-            container.innerHTML='<div class="empty">Unable to load transactions.</div>';
-            recent.innerHTML='<div class="empty">Unable to load recent transactions.</div>'
+
+            container.innerHTML=
+                '<div class="empty">Unable to load transactions.</div>';
+
+            recent.innerHTML=
+                '<div class="empty">Unable to load recent transactions.</div>'
+
         }
+
     }
+
 
     function txMeta(type){
+
         return{
+
             DEPOSIT:['↙','positive','+'],
+
             WITHDRAW:['↗','negative','−'],
+
             TRANSFER:['↕','neutral',''],
+
             REFUND:['↩','positive','+']
+
         }[type]||['•','neutral','']
+
     }
 
+
     function renderTransactions(list,container){
+
         if(!container)return;
 
+
         if(!list||!list.length){
-            container.innerHTML='<div class="empty">No transactions yet.</div>';
+
+            container.innerHTML=
+                '<div class="empty">No transactions yet.</div>';
+
             return
+
         }
+
 
         container.innerHTML='';
 
-        list.forEach(tx=>{
-            const type=String(tx.type||'TRANSACTION').toUpperCase(),
-                amount=Number(tx.amount||0),
-                [icon,cls,prefix]=txMeta(type),
-                date=tx.createdAt?new Date(tx.createdAt).toLocaleString():'—';
 
-            const div=document.createElement('div');
+        list.forEach(tx=>{
+
+            const type=
+                String(tx.type||'TRANSACTION')
+                    .toUpperCase();
+
+            const amount=
+                Number(tx.amount||0);
+
+            const [icon,cls,prefix]=
+                txMeta(type);
+
+            const date=
+                tx.createdAt
+                    ?new Date(tx.createdAt).toLocaleString()
+                    :'—';
+
+
+            const div=
+                document.createElement('div');
+
 
             div.className='transaction';
 
-            div.innerHTML='<div class="transaction-main"><div class="tx-icon">'+icon+'</div><div><div class="transaction-type">'+escapeHtml(type)+'</div><div class="transaction-date">'+escapeHtml(date)+'</div></div></div><div class="transaction-amount '+cls+'">'+prefix+'₹'+amount.toFixed(2)+'</div>';
+
+            div.innerHTML=
+
+                '<div class="transaction-main">'+
+
+                '<div class="tx-icon">'+
+                icon+
+                '</div>'+
+
+                '<div>'+
+
+                '<div class="transaction-type">'+
+                escapeHtml(type)+
+                '</div>'+
+
+                '<div class="transaction-date">'+
+                escapeHtml(date)+
+                '</div>'+
+
+                '</div>'+
+
+                '</div>'+
+
+                '<div class="transaction-amount '+
+                cls+
+                '">'+
+                prefix+
+                '₹'+
+                amount.toFixed(2)+
+                '</div>';
+
 
             container.appendChild(div)
+
         })
+
     }
+
 
     function applyTransactionFilter(){
-        const search=(document.getElementById('transactionSearch').value||'').toLowerCase().trim(),
-            filter=document.getElementById('transactionFilter').value;
 
-        const list=allTransactions.filter(tx=>
-            (filter==='ALL'||String(tx.type||'').toUpperCase()===filter)&&
-            (!search||String(tx.type||'').toLowerCase().includes(search))
-        );
+        const search=
+            (document.getElementById('transactionSearch').value||'')
+                .toLowerCase()
+                .trim();
 
-        renderTransactions(list,document.getElementById('transactionsList'))
+        const filter=
+            document.getElementById('transactionFilter').value;
+
+
+        const list=
+            allTransactions.filter(tx=>
+
+                (
+                    filter==='ALL'||
+                    String(tx.type||'').toUpperCase()===filter
+                )
+
+                &&
+
+                (
+                    !search||
+                    String(tx.type||'').toLowerCase().includes(search)
+                )
+
+            );
+
+
+        renderTransactions(
+            list,
+            document.getElementById('transactionsList')
+        )
+
     }
 
+
     function loadProfile(){
+
         const token=getToken();
 
         if(!token)return;
 
-        try{
-            const payload=JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
 
-            document.getElementById('profileEmail').value=payload.sub||'Not available';
-            document.getElementById('profileRole').value=payload.role||'USER';
-            document.getElementById('profileCircle').textContent=(payload.sub||'U').charAt(0).toUpperCase()
+        try{
+
+            const payload=
+                JSON.parse(
+                    atob(
+                        token
+                            .split('.')[1]
+                            .replace(/-/g,'+')
+                            .replace(/_/g,'/')
+                    )
+                );
+
+
+            document.getElementById('profileEmail')
+                .value=payload.sub||'Not available';
+
+
+            document.getElementById('profileRole')
+                .value=payload.role||'USER';
+
+
+            document.getElementById('profileCircle')
+                .textContent=
+                (payload.sub||'U')
+                    .charAt(0)
+                    .toUpperCase()
+
+
         }catch(e){
-            console.error('Unable to read JWT',e)
+
+            console.error(
+                'Unable to read JWT',
+                e
+            )
+
         }
+
     }
+
 
     function logout(){
+
         localStorage.removeItem('token');
+
         localStorage.removeItem('walletId');
+
         allTransactions=[];
 
-        document.getElementById('app').style.display='none';
-        document.getElementById('authContainer').style.display='grid';
+        document.getElementById('app')
+            .style.display='none';
+
+        document.getElementById('authContainer')
+            .style.display='grid';
 
         showLogin();
-        toast('Logged out successfully')
+
+        toast(
+            'Logged out successfully'
+        )
+
     }
 
-    ['loginEmail','loginPassword','registerName','registerEmail','registerPassword'].forEach(id=>
-        document.getElementById(id)?.addEventListener('keydown',e=>{
-            if(e.key==='Enter'){
-                id.startsWith('login')?login():registerUser()
-            }
-        })
+
+    [
+        'loginEmail',
+        'loginPassword',
+        'registerName',
+        'registerEmail',
+        'registerPassword'
+    ].forEach(id=>
+
+        document.getElementById(id)
+            ?.addEventListener(
+                'keydown',
+                e=>{
+
+                    if(e.key==='Enter'){
+
+                        id.startsWith('login')
+                            ?login()
+                            :registerUser()
+
+                    }
+
+                }
+            )
+
     );
 
-    window.addEventListener('load',()=>{
-        if(getToken())showApp()
-    });
+
+    window.addEventListener(
+        'load',
+        ()=>{
+
+            if(getToken())
+                showApp()
+
+        }
+    );
+
 </script>
 
 </body>
