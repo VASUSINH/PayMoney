@@ -28,17 +28,13 @@ public class SecurityConfig {
                 HttpSecurity http) throws Exception {
 
             http
-                    .cors(Customizer.withDefaults())
                     .csrf(csrf -> csrf.disable())
                     .addFilterBefore(jwtAuthenticationFilter,
                             UsernamePasswordAuthenticationFilter.class)
                     .authorizeHttpRequests(auth -> auth
                             .requestMatchers(
-                                    "/",
                                     "/api/addusers",
                                     "/api/login",
-                                    "/index.html",
-                                    "/paymoney-logo.png",
                                     "/swagger-ui/**",
                                     "/swagger-ui.html",
                                     "/v3/api-docs/**",

@@ -24,7 +24,7 @@ public class  userController {
     //This Line  (@RequestBody userRequestDTO add_userdto) creates a DTO Request Object.
 
     //Register user Endpoint.
-    @PostMapping("api/addusers")
+    @PostMapping("api/register")
     public userResponseDTO createUser(@Valid @RequestBody userRequestDTO add_userdto){
 
         return userService.createUser(add_userdto);
