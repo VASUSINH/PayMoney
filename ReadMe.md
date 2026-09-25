@@ -55,9 +55,8 @@
 |---|---|
 | **Live Application (Frontend)** | [https://paymoney-wallet.netlify.app/](https://paymoney-wallet.netlify.app/) |
 | **Backend Base URL** | [https://paymoney-backend-ybl6.onrender.com](https://paymoney-backend-ybl6.onrender.com) |
-| **Swagger / OpenAPI Docs** | `[Swagger UI URL]` — e.g. `https://paymoney-backend-ybl6.onrender.com/swagger-ui.html` (confirm exact path once deployed) |
-| **Health Check (Actuator)** | `[Health Endpoint URL]` — e.g. `https://paymoney-backend-ybl6.onrender.com/actuator/health` (confirm exact path once deployed) |
-
+| **Swagger / OpenAPI Docs** | https://paymoney-backend-ybl6.onrender.com/swagger-ui/index.html
+| **Health Check (Actuator)** | https://paymoney-backend-ybl6.onrender.com/actuator/health
 > ⚠️ The backend is hosted on Render's free tier — the first request after inactivity may take a few seconds to respond while the instance spins up.
 
 ## 📦 GitHub Repository
