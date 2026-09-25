@@ -33,7 +33,7 @@ public class SecurityConfig {
                             UsernamePasswordAuthenticationFilter.class)
                     .authorizeHttpRequests(auth -> auth
                             .requestMatchers(
-                                    "/api/addusers",
+                                    "/api/register",
                                     "/api/login",
                                     "/swagger-ui/**",
                                     "/swagger-ui.html",
