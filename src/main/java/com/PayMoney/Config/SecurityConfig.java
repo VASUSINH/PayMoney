@@ -32,6 +32,7 @@ public class SecurityConfig {
                             UsernamePasswordAuthenticationFilter.class)
                     .authorizeHttpRequests(auth -> auth
                             .requestMatchers(
+                                    "/",
                                     "/api/addusers",
                                     "/api/login",
                                     "/index.html",
