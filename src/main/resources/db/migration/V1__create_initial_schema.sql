@@ -1,5 +1,5 @@
 CREATE TABLE users (
-                       userId BIGSERIAL PRIMARY KEY,
+                       user_id BIGSERIAL PRIMARY KEY,
                        name VARCHAR(255) NOT NULL,
                        email VARCHAR(255) NOT NULL UNIQUE,
                        password VARCHAR(255) NOT NULL,
@@ -7,13 +7,13 @@ CREATE TABLE users (
 );
 
 CREATE TABLE wallets (
-                         walletId BIGSERIAL PRIMARY KEY,
+                         wallet_id BIGSERIAL PRIMARY KEY,
                          balance NUMERIC(19,2) NOT NULL,
-                         userId BIGINT NOT NULL UNIQUE,
+                         user_id BIGINT NOT NULL UNIQUE,
 
                          CONSTRAINT fk_wallet_user
-                             FOREIGN KEY (userId)
-                                 REFERENCES users(userId)
+                             FOREIGN KEY (user_id)
+                                 REFERENCES users(user_id)
 );
 
 CREATE TABLE transactions (
@@ -27,16 +27,16 @@ CREATE TABLE transactions (
 
                               CONSTRAINT fk_transaction_sender_wallet
                                   FOREIGN KEY (sender_wallet_id)
-                                      REFERENCES wallets(walletId),
+                                      REFERENCES wallets(wallet_id),
 
                               CONSTRAINT fk_transaction_receiver_wallet
                                   FOREIGN KEY (receiver_wallet_id)
-                                      REFERENCES wallets(walletId)
+                                      REFERENCES wallets(wallet_id)
 );
 
 CREATE TABLE payments (
                           payment_id BIGSERIAL PRIMARY KEY,
-                          userId BIGINT NOT NULL,
+                          user_id BIGINT NOT NULL,
                           amount NUMERIC(19,2) NOT NULL,
                           razorpay_order_id VARCHAR(255) NOT NULL UNIQUE,
                           razorpay_payment_id VARCHAR(255),
@@ -46,8 +46,8 @@ CREATE TABLE payments (
                           razorpay_refund_id VARCHAR(255),
 
                           CONSTRAINT fk_payment_user
-                              FOREIGN KEY (userId)
-                                  REFERENCES users(userId)
+                              FOREIGN KEY (user_id)
+                                  REFERENCES users(user_id)
 );
 
 CREATE TABLE idempotency_keys (
