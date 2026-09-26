@@ -204,7 +204,7 @@ public class paymentService {
     }
 
     @Transactional
-    public boolean refundPayment(refundRequestDTO request) {
+    public void refundPayment(refundRequestDTO request) {
 
         paymentEntity payment =
                 paymentRepository
@@ -283,8 +283,6 @@ public class paymentService {
                     "REFUND",
                     "Refunded payment of amount " + payment.getAmount()
             );
-
-            return true;
 
         } catch (RazorpayException e) {
 
