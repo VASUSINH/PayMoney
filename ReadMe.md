@@ -32,27 +32,31 @@ I'm actively looking for Java devloper/Backend/SDE opportunities — always happ
 
 <table>
   <tr>
+    <td align="center" colspan="2">
+      <b><h3>📘 Swagger API Documentation</h3></b>
+      <img width="1896" height="837" alt="05-swagger-ui" src="https://github.com/user-attachments/assets/a88fec72-c023-4867-abc4-b98b4a808110" />
+  </tr>
+  <tr>
     <td align="center" width="50%">
       <b><h3>🔐 Login</h3></b>
-      <img src="./screenshots/01-login.png" width="400" height="260" alt="Login API response"/>
+      <img width="737" height="548" alt="01-login (1)" src="https://github.com/user-attachments/assets/2f8ab533-a361-4cf5-bf45-9d8023d162e8" />
     </td>
     <td align="center" width="50%">
       <b><h3>💰 Wallet Deposit</h3></b>
-      <img src="./screenshots/02-wallet-deposit.png" width="400" height="260" alt="Wallet deposit API response"/>
+      <img width="957" height="793" alt="02-wallet-deposit (1)" src="https://github.com/user-attachments/assets/0664f474-66f6-4f36-b67f-856d8cbc33bc" />
     </td>
   </tr>
   <tr>
     <td align="center" width="50%">
       <b><h3>🔁 Wallet Transfer</h3></b>
-      <img src="./screenshots/03-transfer.png" width="400" height="260" alt="Wallet transfer API response"/>
-    </td>
+     <img width="1002" height="822" alt="03-transfer" src="https://github.com/user-attachments/assets/a6759945-1f50-4397-9dbd-1b1dbfa3cc93" />
+   </td>
     <td align="center" width="50%">
       <b><h3>💳 Payment Order</h3></b>
-      <img src="./screenshots/04-payment-order.png" width="400" height="260" alt="Payment order creation API response"/>
+      <img width="992" height="771" alt="04-payment-order" src="https://github.com/user-attachments/assets/1ab08284-eaa4-4e1c-8d42-9141a0597665" />
     </td>
   </tr>
 </table>
-
 ---
 
 ## ⭐ Highlights
