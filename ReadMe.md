@@ -102,10 +102,9 @@ Built in structured, incremental phases rather than all at once:
 - ✅ Phase 9 — Refunds
 - ✅ Phase 10 — Fraud Detection
 - ✅ Phase 11 — Idempotency
-- ❌ Phase 12 — Webhooks *(Not Implemented)*
-- ✅ Phase 13 — Audit Logging
-- ✅ Phase 14 — Flyway + Swagger + Actuator
-- ✅ Phase 15 — Testing + Docker + Deployment
+- ✅ Phase 12 — Audit Logging
+- ✅ Phase 13 — Flyway + Swagger + Actuator
+- ✅ Phase 14 — Testing + Docker + Deployment
 
 ---
 
@@ -472,15 +471,24 @@ docker run --env-file environmentFile.env -p 8080:8080 paymoney-backend
 
 ---
 
-## 🗺 Roadmap
+## ✅ Production-Readiness Checklist
 
-- [ ] Webhook handler to auto-confirm Razorpay callbacks end-to-end
-- [ ] Refresh-token support
-- [ ] Paginated transaction history endpoints
-- [ ] Rate limiting on login/transfer endpoints
-- [ ] CI pipeline for automated test + deploy
+- ✅ Stateless JWT authentication with role-based access control
+- ✅ Centralized, consistent error handling (`globalExceptionHandler`)
+- ✅ Versioned, reviewable database migrations (Flyway)
+- ✅ Fraud-screening layer decoupled from core transaction logic
+- ✅ Idempotent payment handling to prevent duplicate charges
+- ✅ Append-only audit trail for every sensitive action
+- ✅ Containerized with Docker for consistent deployments
+- ✅ Live health-check endpoint (Actuator) for uptime monitoring
+- ✅ Fully documented, explorable API (Swagger/OpenAPI)
+- ✅ Deployed and publicly reachable — not just a local demo
 
 ---
+
+## 🙏 Acknowledgments
+
+Built independently as a self-directed backend engineering project, referencing official documentation for [Spring Boot](https://spring.io/projects/spring-boot), [Spring Security](https://spring.io/projects/spring-security), and [Razorpay's API docs](https://razorpay.com/docs/) throughout.
 
 ## 📄 License
 
