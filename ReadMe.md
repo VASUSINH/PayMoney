@@ -16,9 +16,11 @@ A wallet-and-payments backend covering the parts of fintech engineering that are
 
 ### 📫 Let's Connect
 
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/ayush-sinha-7611572a1/)
+I'm actively looking for Java devloper/Backend/SDE opportunities — always happy to talk about system design, payments infrastructure, or this project in detail.
+
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/ayush-sinha-7611572a1/)
 [![Email](https://img.shields.io/badge/Email-D14836?style=for-the-badge&logo=gmail&logoColor=white)](mailto:ayush21052003@gmail.com)
-[![GitHub](https://img.shields.io/badge/GitHub-VASUSINH-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/VASUSINH)
+[![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/VASUSINH)
 [![About Me](https://img.shields.io/badge/About%20Me-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/VASUSINH/VASUSINH)
 
 
