@@ -13,6 +13,10 @@ import com.PayMoney.Repository.transactionRepository;
 import com.PayMoney.Repository.walletRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.Cache;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.CacheManager;
+
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -43,6 +47,9 @@ public class transactionService {
 
     @Autowired
     private auditLogService auditLogService;
+
+    @Autowired
+    private CacheManager cacheManager;
 
     @Transactional
     public transferResponseDTO transfer(
@@ -98,6 +105,8 @@ public class transactionService {
                             .orElseThrow(() ->
                                     new invalidTransactionException(
                                             "Original transaction not found"));
+
+
 
             return transactionMapper.toDTO(existingTransaction);
         }
@@ -165,6 +174,13 @@ public class transactionService {
                         " to wallet " + request.getReceiverWalletId()
         );
 
+        Cache cache = cacheManager.getCache("wallets");
+
+        if (cache != null) {
+            cache.evict(sender.getUser().getEmail());
+            cache.evict(receiver.getUser().getEmail());
+        }
+
         return transactionMapper.toDTO(savedTransaction);
     }
 
@@ -225,7 +241,10 @@ public class transactionService {
 
         return transactionMapper.toDTO(transaction);
     }
-
+    @CacheEvict(
+            value = "wallets",
+            key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()"
+    )
     @Transactional
     public transferResponseDTO deposit(BigDecimal amount) {
 
@@ -267,6 +286,10 @@ public class transactionService {
 
     // Withdraw Method
     @Transactional
+    @CacheEvict(
+            value = "wallets",
+            key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()"
+    )
     public transferResponseDTO withdraw(BigDecimal amount) {
 
         userEntity user = authService.getAuthenticatedUser();

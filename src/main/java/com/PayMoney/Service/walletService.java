@@ -5,7 +5,9 @@ import com.PayMoney.Entity.*;
 import com.PayMoney.Exception.walletNotFoundException;
 import com.PayMoney.Mapper.walletMapper;
 import com.PayMoney.Repository.walletRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -24,6 +26,11 @@ public class walletService {
     private auditLogService auditLogService;
 
     //Fetch the wallet and view Balance
+    @Cacheable(
+            value = "wallets",
+            key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()"
+    )
+
     public walletResponseDTO getMyWallet() {
 
         userEntity user = authService.getAuthenticatedUser();
