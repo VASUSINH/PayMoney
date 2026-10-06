@@ -3,11 +3,12 @@
 # 💸 PayMoney
 ### A Secure FinTech Wallet & Payments Backend — Java 21 · Spring Boot · PostgreSQL
 
-<img src="https://skillicons.dev/icons?i=java,spring,postgres,docker,maven,git,github,idea,postman" alt="Java, Spring, PostgreSQL, Docker, Maven, Git, GitHub, IntelliJ, Postman" />
+<img src="https://skillicons.dev/icons?i=java,spring,postgres,redis,docker,maven,git,github,idea,postman" alt="Java, Spring, PostgreSQL, Redis, Docker, Maven, Git, GitHub, IntelliJ, Postman" />
 
 [![Java](https://img.shields.io/badge/Java-21-orange?style=flat-square&logo=openjdk&logoColor=white)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1.1-6DB33F?style=flat-square&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Redis](https://img.shields.io/badge/Redis-DC382D?style=flat-square&logo=redis&logoColor=white)](https://redis.io/)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)](https://www.docker.com/)
 
 A wallet-and-payments backend covering the parts of fintech engineering that are actually hard: JWT auth with role-based access, atomic wallet transfers, Razorpay-backed payments, fraud screening, idempotent retries, and a full audit trail — built end-to-end and deployed live.
@@ -70,6 +71,7 @@ I'm actively looking for Java devloper/Backend/SDE opportunities — always happ
 - 📜 **Audit-ready** — an append-only audit log (`auditLogEntity`, `auditLogService`) for compliance-style traceability
 - 🗃️ **Managed schema evolution** — versioned SQL migrations via Flyway (`V1__`, `V2__`)
 - 🐳 **Deployed, not just demoed** — Dockerized, live on Render, with Swagger docs and an Actuator health check publicly reachable
+- ⚡ **Redis caching** — Spring Cache annotations (`@Cacheable` / `@CacheEvict`) with TTL-based expiry on read-heavy endpoints, evicted on writes so cached data stays consistent
 - 🧱 **Clean layered architecture** — Controller → Service → Repository, with dedicated Mapper, DTO, and centralized Exception-handling layers
 
 **Keywords:** Java 21 · Spring Boot · Spring Security · Spring Data JPA · JWT · PostgreSQL · Flyway · Docker · Razorpay · REST API · Postman · RBAC
@@ -83,6 +85,7 @@ I'm actively looking for Java devloper/Backend/SDE opportunities — always happ
 | Language & Framework | Java 21, Spring Boot 4.1.1, Spring Web MVC |
 | Security | Spring Security, custom JWT filter, role-based access control |
 | Data | Spring Data JPA (Hibernate), PostgreSQL, Flyway migrations |
+| Caching | Redis, Spring Cache (`@Cacheable`, `@CacheEvict`), TTL-based expiry |
 | Payments | Razorpay (order creation, verification, refunds) |
 | Reliability | Custom fraud-screening service, idempotency keys, audit logging |
 | Docs & Ops | Swagger / OpenAPI, Spring Boot Actuator |
@@ -90,7 +93,6 @@ I'm actively looking for Java devloper/Backend/SDE opportunities — always happ
 | Testing & Tooling | Postman (API collection), IntelliJ IDEA |
 
 ---
-
 ## 🚀 Development Phases
 
 Built in structured, incremental phases rather than all at once:
@@ -242,6 +244,7 @@ flowchart TB
     subgraph External["External"]
         E1[(PostgreSQL)]
         E2[Razorpay]
+        E3[(Redis Cache)]
     end
 
     A1 --> B0
@@ -267,11 +270,14 @@ flowchart TB
 
     R1 & R2 & R3 & R4 & R5 --> E1
 
+    S2 -.->|"cache read / evict"| E3
+    S3 -.->|"cache read / evict"| E3
+
     B0 -.-> M1
     B0 -.-> M2
 ```
 
-**Flow:** `Client → JWT + RBAC filter → Controller → Service → Repository → PostgreSQL`, with fraud checks and audit logging as cross-cutting concerns and an outbound call from the payment service to Razorpay.
+**Flow:** `Client → JWT + RBAC filter → Controller → Service → (Redis cache) → Repository → PostgreSQL`, with fraud checks and audit logging as cross-cutting concerns and an outbound call from the payment service to Razorpay.
 
 </details>
 
@@ -471,6 +477,11 @@ Runs on `http://localhost:8080`; Flyway auto-applies migrations on boot. Swagger
 ```bash
 docker build -t paymoney-backend .
 docker run --env-file environmentFile.env -p 8080:8080 paymoney-backend
+
+# set DB_URL, DB_USERNAME, DB_PASSWORD, JWT_SECRET, RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, REDIS_HOST, REDIS_PORT
+
+# start Redis locally
+docker run -d --name redis -p 6379:6379 redis:7
 ```
 
 ---
@@ -483,6 +494,7 @@ docker run --env-file environmentFile.env -p 8080:8080 paymoney-backend
 - ✅ Fraud-screening layer decoupled from core transaction logic
 - ✅ Idempotent payment handling to prevent duplicate charges
 - ✅ Append-only audit trail for every sensitive action
+- ✅ Redis caching with TTL expiry and write-time eviction for faster repeat reads
 - ✅ Containerized with Docker for consistent deployments
 - ✅ Live health-check endpoint (Actuator) for uptime monitoring
 - ✅ Fully documented, explorable API (Swagger/OpenAPI)
@@ -490,15 +502,21 @@ docker run --env-file environmentFile.env -p 8080:8080 paymoney-backend
 
 ---
 
+## 🧠 Key Learnings
+
+- **Concurrency:** wallet balances must stay correct when several transfers hit the same wallet at once, so I used locking inside `@Transactional` methods to prevent lost updates.
+- **Idempotency:** payment endpoints can be retried by clients or networks, so idempotency keys prevent duplicate debits and credits.
+- **Caching trade-offs:** Redis speeds up repeat reads, but cached data must be evicted on writes, and TTLs decide how stale it can get.
+- **Secure configuration:** secrets live in environment variables and stay out of source control.
+- **Operational basics:** Flyway migrations, Actuator health checks and Swagger docs make the service easier to run and understand.
+
+---
+
 ## 🙏 Acknowledgments
 
 Built independently as a self-directed backend engineering project, referencing official documentation for [Spring Boot](https://spring.io/projects/spring-boot), [Spring Security](https://spring.io/projects/spring-security), and [Razorpay's API docs](https://razorpay.com/docs/) throughout.
 
-## 📄 License
 
-Currently unlicensed — add a `LICENSE` file if you intend to open-source this under a specific license (MIT, Apache-2.0, etc.).
-
----
 
 <div align="center">
 
