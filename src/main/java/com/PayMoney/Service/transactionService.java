@@ -48,8 +48,7 @@ public class transactionService {
     @Autowired
     private auditLogService auditLogService;
 
-    @Autowired
-    private CacheManager cacheManager;
+
 
     @Transactional
     public transferResponseDTO transfer(
@@ -168,13 +167,6 @@ public class transactionService {
                         " to wallet " + request.getReceiverWalletId()
         );
 
-        Cache cache = cacheManager.getCache("wallets");
-
-        if (cache != null) {
-            cache.evict(sender.getUser().getEmail());
-            cache.evict(receiver.getUser().getEmail());
-        }
-
         return transactionMapper.toDTO(savedTransaction);
     }
 
@@ -233,10 +225,7 @@ public class transactionService {
 
         return transactionMapper.toDTO(transaction);
     }
-    @CacheEvict(
-            value = "wallets",
-            key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()"
-    )
+
     @Transactional
     public transferResponseDTO deposit(BigDecimal amount) {
 
@@ -278,10 +267,7 @@ public class transactionService {
 
 
     @Transactional
-    @CacheEvict(
-            value = "wallets",
-            key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()"
-    )
+
     public transferResponseDTO withdraw(BigDecimal amount) {
 
         userEntity user = authService.getAuthenticatedUser();

@@ -25,11 +25,7 @@ public class walletService {
     @Autowired
     private auditLogService auditLogService;
 
-    //Fetch the wallet and view Balance
-    @Cacheable(
-            value = "wallets",
-            key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()"
-    )
+
 
     public walletResponseDTO getMyWallet() {
 
