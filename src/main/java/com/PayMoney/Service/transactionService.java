@@ -56,7 +56,6 @@ public class transactionService {
             transferRequestDTO request,
             String idempotencyKey) {
 
-        // Get sender & receiver wallet
         Long senderId = request.getSenderWalletId();
         Long receiverId = request.getReceiverWalletId();
 
@@ -116,7 +115,6 @@ public class transactionService {
                     "Sender wallet does not belong to authenticated user");
         }
 
-        //fraud detection condition
         if (fraudService.isSuspicious(
                 request.getSenderWalletId(),
                 request.getAmount())) {
@@ -125,17 +123,14 @@ public class transactionService {
                     "Transaction flagged for fraud review");
         }
 
-        // Check sender balance
         if (sender.getBalance().compareTo(request.getAmount()) < 0) {
             throw new insufficientBalanceException("Insufficient wallet balance");
         }
 
-        // Deduct from sender
         sender.setBalance(
                 sender.getBalance().subtract(request.getAmount())
         );
 
-        // Add to receiver
         receiver.setBalance(
                 receiver.getBalance().add(request.getAmount())
         );
@@ -143,7 +138,6 @@ public class transactionService {
         walletRepository.save(sender);
         walletRepository.save(receiver);
 
-        // Create transaction record
         transactionEntity transaction = new transactionEntity();
 
         transaction.setSenderWallet(sender);
@@ -184,7 +178,6 @@ public class transactionService {
         return transactionMapper.toDTO(savedTransaction);
     }
 
-    //Get Wallet transaction Details
     public List<transferResponseDTO> getWalletTransactions(Long walletId) {
 
         userEntity user = authService.getAuthenticatedUser();
@@ -208,7 +201,6 @@ public class transactionService {
                 .toList();
     }
 
-    // Get Transaction By Transaction ID
     public transferResponseDTO getTransactionById(Long transactionId) {
 
         userEntity user = authService.getAuthenticatedUser();
@@ -284,7 +276,7 @@ public class transactionService {
     }
 
 
-    // Withdraw Method
+
     @Transactional
     @CacheEvict(
             value = "wallets",

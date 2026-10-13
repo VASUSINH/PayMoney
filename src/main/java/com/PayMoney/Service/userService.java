@@ -40,7 +40,6 @@ public class userService {
     private walletRepository walletRepo;
 
 
-    //ADD User(Register) Service Class Logic.
 
     @Transactional
     public userResponseDTO createUser(userRequestDTO userRequest) {
@@ -70,7 +69,7 @@ public class userService {
         return userMapper.toDTO(savedUser);
     }
 
-    // Login user(Authentication) Service Class logic.
+
 
     public loginResponseDTO login(loginRequestDTO request) {
 

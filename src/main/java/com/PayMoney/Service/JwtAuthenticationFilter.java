@@ -14,7 +14,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
-// Checks the HTTP request contains JWT or Not.
+
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -65,7 +65,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         } catch (Exception e) {
 
-            e.printStackTrace();
             SecurityContextHolder.clearContext();
         }
 

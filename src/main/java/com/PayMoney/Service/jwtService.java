@@ -14,7 +14,6 @@ import java.nio.charset.StandardCharsets;
 
 @Service
 public class jwtService {
-//This Class is Responsible to handle JWT Operations(create,extract,validate).
 private final SecretKey secretKey;
 
     public jwtService(@Value("${jwt.secret}") String secret) {
@@ -22,7 +21,6 @@ private final SecretKey secretKey;
                 secret.getBytes(StandardCharsets.UTF_8)
         );
     }
-    // This Method is Responsible to Generate Tokens using email.
     public String generateToken(userEntity userEntity){
         return Jwts.builder()
                 .subject(userEntity.getEmail())
@@ -32,7 +30,6 @@ private final SecretKey secretKey;
                 .compact();
     }
 
-    // Extract the email from the Token recieved on Subsequent request after login.
     public String extractEmail(String token) {
 
         return Jwts.parser()
@@ -43,7 +40,6 @@ private final SecretKey secretKey;
                 .getSubject();
     }
 
-    // It validates the Tokens.
     public boolean isTokenValid(String token, userEntity user) {
 
         String email = extractEmail(token);

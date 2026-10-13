@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.*;
 @SecurityRequirement(name = "bearer-key")
 @RestController
 public class walletController {
-    //Finds the Wallet for the User
     @Autowired
     private walletService walletService;
 
@@ -27,7 +26,6 @@ public class walletController {
         return walletService.getMyWallet();
     }
 
-    //Deposit the Amount.
     @PostMapping("/api/wallet/deposit")
     @PreAuthorize("hasRole('USER')")
     public transferResponseDTO deposit(
@@ -36,7 +34,6 @@ public class walletController {
         return transactionService.deposit(request.getAmount());
     }
 
-    //Withdraw the Amount
     @PostMapping("/api/wallet/withdraw")
     @PreAuthorize("hasRole('USER')")
     public transferResponseDTO withdraw(
