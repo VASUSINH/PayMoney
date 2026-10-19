@@ -22,18 +22,19 @@ public class IdempotencyEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "idempotency_key", nullable = false, unique = true, length = 64)
+    @Column(name = "idempotency_key",
+            nullable = false, unique = true, length = 64)
     private String idempotencyKey;
 
-    @Column(nullable = false)
+    @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @Column(nullable = false)
+    @Column(name = "transaction_id", nullable = false)
     private Long transactionId;
 
-    @Column(name = "request_hash", length = 64)
+    @Column(name = "request_hash", nullable = false, length = 64)
     private String requestHash;
 
-    @Column(nullable = false)
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 }

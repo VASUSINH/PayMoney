@@ -1,16 +1,16 @@
+
 package com.PayMoney.Controller;
 
-import com.PayMoney.DTO.TransferRequestDTO;
 import com.PayMoney.DTO.TransferResponseDTO;
 import com.PayMoney.Service.TransactionService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @SecurityRequirement(name = "bearer-key")
 @RestController
@@ -19,30 +19,29 @@ public class TransactionController {
     @Autowired
     private TransactionService transactionService;
 
+    @GetMapping("/api/transactions/my-walletTransaction")
     @PreAuthorize("hasRole('USER')")
-    @PostMapping("/api/transactions/transfer")
-    public ResponseEntity<TransferResponseDTO> transfer(
-            @Valid @RequestBody TransferRequestDTO request , @RequestHeader("Idempotency-Key") String idempotencyKey) {
+    public ResponseEntity<Page<TransferResponseDTO>> getWalletTransactions(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
 
-        TransferResponseDTO response =
-                transactionService.transfer(request, idempotencyKey);
+        if (page < 0 || size < 1 || size > 100) {
+            throw new IllegalArgumentException(
+                    "Page must be >= 0 and size must be between 1 and 100");
+        }
 
-        return ResponseEntity.ok(response);
-    }
+        Pageable pageable = PageRequest.of(page, size);
 
-    @GetMapping("/api/transactions/wallet/{walletId}")
-    @PreAuthorize("hasRole('USER')")
-    public List<TransferResponseDTO> getWalletTransactions(
-           @Valid @PathVariable Long walletId) {
-
-        return transactionService.getWalletTransactions(walletId);
+        return ResponseEntity.ok(
+                transactionService.getWalletTransactions(pageable));
     }
 
     @GetMapping("/api/transactions/{transactionId}")
     @PreAuthorize("hasRole('USER')")
-    public TransferResponseDTO getTransactionById(
+    public ResponseEntity<TransferResponseDTO> getTransactionById(
             @PathVariable Long transactionId) {
 
-        return transactionService.getTransactionById(transactionId);
+        return ResponseEntity.ok(
+                transactionService.getTransactionById(transactionId));
     }
 }

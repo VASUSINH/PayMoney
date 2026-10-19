@@ -7,15 +7,17 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 @Repository
     public interface TransactionRepository
             extends JpaRepository<TransactionEntity, Long> {
 
-        List<TransactionEntity> findBySenderWallet_WalletIdOrReceiverWallet_WalletId(
+        Page<TransactionEntity> findBySenderWallet_WalletIdOrReceiverWallet_WalletId(
                 Long senderWalletId,
-                Long receiverWalletId
+                Long receiverWalletId,
+                Pageable pageable
         );
 
 

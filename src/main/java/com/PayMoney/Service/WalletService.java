@@ -1,13 +1,18 @@
+
 package com.PayMoney.Service;
 
+import com.PayMoney.DTO.TransferRequestDTO;
+import com.PayMoney.DTO.TransferResponseDTO;
 import com.PayMoney.DTO.WalletResponseDTO;
-import com.PayMoney.Entity.*;
+import com.PayMoney.Entity.UserEntity;
+import com.PayMoney.Entity.WalletEntity;
 import com.PayMoney.Exception.WalletNotFoundException;
 import com.PayMoney.Mapper.walletMapper;
 import com.PayMoney.Repository.WalletRepository;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
 
 @Service
 public class WalletService {
@@ -22,9 +27,7 @@ public class WalletService {
     private AuthService authService;
 
     @Autowired
-    private AuditLogService auditLogService;
-
-
+    private TransactionService transactionService;
 
     public WalletResponseDTO getMyWallet() {
 
@@ -36,5 +39,18 @@ public class WalletService {
                         new WalletNotFoundException("Wallet not found"));
 
         return walletMapper.toDTO(wallet);
+    }
+
+    public TransferResponseDTO transfer(
+            TransferRequestDTO request,
+            String idempotencyKey) {
+
+        return transactionService.transfer(request, idempotencyKey);
+    }
+
+    public TransferResponseDTO withdraw(
+            BigDecimal amount, String idempotencyKey) {
+
+        return transactionService.withdraw(amount, idempotencyKey);
     }
 }

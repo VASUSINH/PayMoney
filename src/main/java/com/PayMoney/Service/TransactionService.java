@@ -11,21 +11,24 @@ import com.PayMoney.Mapper.TransactionMapper;
 import com.PayMoney.Repository.IdempotencyRepository;
 import com.PayMoney.Repository.TransactionRepository;
 import com.PayMoney.Repository.WalletRepository;
-import jakarta.transaction.Transactional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 
 
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+
+import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class TransactionService {
@@ -232,27 +235,25 @@ public class TransactionService {
         }
     }
 
-    public List<TransferResponseDTO> getWalletTransactions(Long walletId) {
+
+    public Page<TransferResponseDTO> getWalletTransactions(
+            Pageable pageable) {
 
         UserEntity user = authService.getAuthenticatedUser();
 
-        WalletEntity wallet = walletRepository.findById(walletId)
+        WalletEntity wallet = walletRepository
+                .findByUser_UserId(user.getUserId())
                 .orElseThrow(() ->
                         new WalletNotFoundException("Wallet not found"));
 
-        if (!wallet.getUser().getUserId().equals(user.getUserId())) {
-            throw new InvalidTransactionException(
-                    "Wallet does not belong to authenticated user");
-        }
-
-        List<TransactionEntity> transactions =
+        Page<TransactionEntity> transactions =
                 transactionRepository
                         .findBySenderWallet_WalletIdOrReceiverWallet_WalletId(
-                                walletId, walletId);
+                                wallet.getWalletId(),
+                                wallet.getWalletId(),
+                                pageable);
 
-        return transactions.stream()
-                .map(transactionMapper::toDTO)
-                .toList();
+        return transactions.map(transactionMapper::toDTO);
     }
 
     public TransferResponseDTO getTransactionById(Long transactionId) {
@@ -292,29 +293,48 @@ public class TransactionService {
 
 
     @Transactional
+    public TransferResponseDTO withdraw(
+            BigDecimal amount,
+            String idempotencyKey) {
 
-    public TransferResponseDTO withdraw(BigDecimal amount) {
         validateAmount(amount);
+        validateIdempotencyKey(idempotencyKey);
+
         UserEntity user = authService.getAuthenticatedUser();
 
-        WalletEntity wallet =walletRepository
+        String requestHash = generateWithdrawalRequestHash(
+                user.getUserId(), amount);
+
+        Optional<TransferResponseDTO> existing =
+                findExistingIdempotentTransaction(
+                        idempotencyKey, user.getUserId(), requestHash);
+
+        if (existing.isPresent()) {
+            return existing.get();
+        }
+
+        WalletEntity wallet = walletRepository
                 .findWalletForUpdateByUserId(user.getUserId())
                 .orElseThrow(() ->
                         new WalletNotFoundException("Wallet not found"));
+
+
+        existing = findExistingIdempotentTransaction(
+                idempotencyKey, user.getUserId(), requestHash);
+
+        if (existing.isPresent()) {
+            return existing.get();
+        }
 
         if (wallet.getBalance().compareTo(amount) < 0) {
             throw new InsufficientBalanceException(
                     "Insufficient wallet balance");
         }
 
-        wallet.setBalance(
-                wallet.getBalance().subtract(amount)
-        );
-
+        wallet.setBalance(wallet.getBalance().subtract(amount));
         walletRepository.save(wallet);
 
         TransactionEntity transaction = new TransactionEntity();
-
         transaction.setSenderWallet(wallet);
         transaction.setReceiverWallet(null);
         transaction.setAmount(amount);
@@ -325,28 +345,111 @@ public class TransactionService {
         TransactionEntity savedTransaction =
                 transactionRepository.save(transaction);
 
+        IdempotencyEntity idempotency = new IdempotencyEntity();
+        idempotency.setIdempotencyKey(idempotencyKey);
+        idempotency.setUserId(user.getUserId());
+        idempotency.setTransactionId(
+                savedTransaction.getTransactionId());
+        idempotency.setRequestHash(requestHash);
+        idempotency.setCreatedAt(LocalDateTime.now());
+
+        idempotencyRepository.save(idempotency);
+
         auditLogService.log(
                 user.getUserId(),
                 "WITHDRAW",
-                "Withdrew " + amount +
-                        " from wallet " + wallet.getWalletId()
+                "Withdrew " + amount
+                        + " from wallet " + wallet.getWalletId()
         );
 
         return transactionMapper.toDTO(savedTransaction);
     }
 
-    private void validateAmount(BigDecimal amount) {
-        if (amount == null
-                || amount.compareTo(BigDecimal.ZERO) <= 0
-                || amount.compareTo(new BigDecimal("50000.00")) > 0
-                || amount.stripTrailingZeros().scale() > 2) {
-
+    private void validateIdempotencyKey(String idempotencyKey) {
+        if (idempotencyKey == null || idempotencyKey.isBlank()) {
             throw new InvalidTransactionException(
-                    "Amount must be positive, at most 50000, "
-                            + "and have at most 2 decimal places"
-            );
+                    "Idempotency-Key header is required");
+        }
+
+        if (idempotencyKey.length() > 64) {
+            throw new InvalidTransactionException(
+                    "Idempotency key must not exceed 64 characters");
         }
     }
+
+    private String generateWithdrawalRequestHash(
+            Long userId, BigDecimal amount) {
+
+        String details = "WITHDRAW:" + userId + ":"
+                + amount.stripTrailingZeros().toPlainString();
+
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+
+            return HexFormat.of().formatHex(
+                    digest.digest(details.getBytes(StandardCharsets.UTF_8)));
+
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException(
+                    "Unable to generate withdrawal request hash", e);
+        }
+    }
+
+    private Optional<TransferResponseDTO> findExistingIdempotentTransaction(
+            String idempotencyKey,
+            Long userId,
+            String requestHash) {
+
+        Optional<IdempotencyEntity> existing =
+                idempotencyRepository.findByIdempotencyKey(idempotencyKey);
+
+        if (existing.isEmpty()) {
+            return Optional.empty();
+        }
+
+        IdempotencyEntity savedKey = existing.get();
+
+        if (!savedKey.getUserId().equals(userId)) {
+            throw new InvalidTransactionException(
+                    "Idempotency key belongs to another user");
+        }
+
+        if (savedKey.getRequestHash() == null
+                || !savedKey.getRequestHash().equals(requestHash)) {
+            throw new InvalidTransactionException(
+                    "Idempotency key was already used for a different request");
+        }
+
+        TransactionEntity transaction = transactionRepository
+                .findById(savedKey.getTransactionId())
+                .orElseThrow(() ->
+                        new InvalidTransactionException(
+                                "Original transaction not found"));
+
+        return Optional.of(transactionMapper.toDTO(transaction));
+    }
+
+
+    private void validateAmount(BigDecimal amount) {
+
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new InvalidTransactionException(
+                    "Amount must be greater than zero");
+        }
+
+        if (amount.compareTo(new BigDecimal("50000.00")) > 0) {
+            throw new InvalidTransactionException(
+                    "Amount cannot exceed 50000.00");
+        }
+
+        if (amount.scale() > 2) {
+            throw new InvalidTransactionException(
+                    "Amount cannot have more than two decimal places");
+        }
+    }
+
+
+
 
 }
 

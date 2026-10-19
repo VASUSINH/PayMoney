@@ -41,7 +41,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 
         if (!authHeader.startsWith("Bearer ")) {
-            writeUnauthorized(response);
+            filterChain.doFilter(request, response);
             return;
         }
 
