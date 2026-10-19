@@ -1,0 +1,39 @@
+package com.PayMoney.Entity;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import jakarta.persistence.Column;
+
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "idempotency_keys", uniqueConstraints = {
+                @UniqueConstraint(columnNames = "idempotencyKey")
+        }
+)
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class IdempotencyEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "idempotency_key", nullable = false, unique = true, length = 64)
+    private String idempotencyKey;
+
+    @Column(nullable = false)
+    private Long userId;
+
+    @Column(nullable = false)
+    private Long transactionId;
+
+    @Column(name = "request_hash", length = 64)
+    private String requestHash;
+
+    @Column(nullable = false)
+    private LocalDateTime createdAt;
+}

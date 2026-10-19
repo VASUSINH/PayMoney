@@ -1,12 +1,14 @@
+
 package com.PayMoney.Service;
 
-import com.PayMoney.Entity.userEntity;
-import com.PayMoney.Repository.userRepository;
+import com.PayMoney.Entity.UserEntity;
+import com.PayMoney.Repository.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -14,15 +16,14 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
-
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Autowired
-    private jwtService jwtService;
+    private JwtService jwtService;
 
     @Autowired
-    private userRepository userRepository;
+    private UserRepository userRepository;
 
     @Override
     protected void doFilterInternal(
@@ -33,25 +34,38 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String authHeader = request.getHeader("Authorization");
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        if (authHeader == null) {
             filterChain.doFilter(request, response);
             return;
         }
 
+
+        if (!authHeader.startsWith("Bearer ")) {
+            writeUnauthorized(response);
+            return;
+        }
+
+        String token = authHeader.substring(7).trim();
+
+        if (token.isEmpty()) {
+            writeUnauthorized(response);
+            return;
+        }
+
         try {
-
-            String token = authHeader.substring(7);
-
             String email = jwtService.extractEmail(token);
 
-            userEntity userEntity = userRepository
+            UserEntity userEntity = userRepository
                     .findByEmail(email)
                     .orElse(null);
 
-            if (userEntity != null
-                    && jwtService.isTokenValid(token, userEntity)
-                    && SecurityContextHolder.getContext().getAuthentication() == null) {
+            if (userEntity == null || !jwtService.isTokenValid(token, userEntity)) {
+                SecurityContextHolder.clearContext();
+                writeUnauthorized(response);
+                return;
+            }
 
+            if (SecurityContextHolder.getContext().getAuthentication() == null) {
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(
                                 userEntity,
@@ -63,11 +77,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         .setAuthentication(authentication);
             }
 
-        } catch (Exception e) {
-
+        } catch (Exception exception) {
             SecurityContextHolder.clearContext();
+            writeUnauthorized(response);
+            return;
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private void writeUnauthorized(HttpServletResponse response)
+            throws IOException {
+
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.getWriter().write(
+                "{\"message\":\"Invalid authentication token\"}"
+        );
     }
 }
