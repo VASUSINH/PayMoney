@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -19,7 +20,7 @@ public class TransactionController {
     @Autowired
     private TransactionService transactionService;
 
-    @GetMapping("/api/transactions/my-walletTransaction")
+    @GetMapping("/api/transactions/my-walletTransactions")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<Page<TransferResponseDTO>> getWalletTransactions(
             @RequestParam(defaultValue = "0") int page,
@@ -29,8 +30,12 @@ public class TransactionController {
             throw new IllegalArgumentException(
                     "Page must be >= 0 and size must be between 1 and 100");
         }
-
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+                        .and(Sort.by(Sort.Direction.DESC, "transactionId"))
+        );
 
         return ResponseEntity.ok(
                 transactionService.getWalletTransactions(pageable));

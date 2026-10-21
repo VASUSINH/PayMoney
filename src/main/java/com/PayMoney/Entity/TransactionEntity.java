@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import jakarta.persistence.FetchType;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -19,11 +20,12 @@ public class TransactionEntity {
         @GeneratedValue(strategy = GenerationType.IDENTITY)
         private Long transactionId;
 
-        @ManyToOne
+        @ManyToOne(fetch = FetchType.LAZY)
         @JoinColumn(name = "sender_wallet_id",nullable=true)
         private WalletEntity senderWallet;
 
-        @ManyToOne
+
+        @ManyToOne(fetch = FetchType.LAZY)
         @JoinColumn(name = "receiver_wallet_id",nullable= true)
         private WalletEntity receiverWallet;
 
@@ -40,5 +42,10 @@ public class TransactionEntity {
 
         @Column(nullable = false)
         private LocalDateTime createdAt;
+
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "payment_id")
+        private PaymentEntity payment;
+
     }
 

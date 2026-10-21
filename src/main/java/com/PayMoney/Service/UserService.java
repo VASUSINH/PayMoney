@@ -10,6 +10,8 @@ import com.PayMoney.Repository.WalletRepository;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.PayMoney.Exception.UserNotFoundException;
@@ -17,7 +19,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 
 
 import java.math.BigDecimal;
-import java.util.List;
+
 
 
 @Service
@@ -88,11 +90,9 @@ public class UserService {
         return new LoginResponseDTO(token);
     }
 
-    public List<UserResponseDTO> getAllUsers() {
-        return userRepository.findAll()
-                .stream()
-                .map(userMapper::toDTO)
-                .toList();
+    public Page<UserResponseDTO> getAllUsers(Pageable pageable) {
+        return userRepository.findAll(pageable)
+                .map(userMapper::toDTO);
     }
     public UserResponseDTO getUserById(Long userId) {
 

@@ -15,13 +15,15 @@ import java.math.BigDecimal;
 public class WalletEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name="walletId")
+    @Column(name = "wallet_id")
     private Long walletId;
+
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false, unique = true)
+    private UserEntity user;
 
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal balance;
 
-    @OneToOne
-    @JoinColumn(name = "userId", nullable = false, unique = true)
-    private UserEntity user;
+
 }

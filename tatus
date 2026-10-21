@@ -1,0 +1,1221 @@
+[1mdiff --git a/src/main/java/com/PayMoney/Config/SecurityConfig.java b/src/main/java/com/PayMoney/Config/SecurityConfig.java[m
+[1mindex bb9f94c..63b90c0 100644[m
+[1m--- a/src/main/java/com/PayMoney/Config/SecurityConfig.java[m
+[1m+++ b/src/main/java/com/PayMoney/Config/SecurityConfig.java[m
+[36m@@ -1,3 +1,4 @@[m
+[32m+[m
+ package com.PayMoney.Config;[m
+ [m
+ import com.PayMoney.Service.JwtAuthenticationFilter;[m
+[36m@@ -14,7 +15,6 @@[m [mimport org.springframework.security.crypto.password.PasswordEncoder;[m
+ import org.springframework.security.web.SecurityFilterChain;[m
+ import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;[m
+ [m
+[31m-[m
+ @Configuration[m
+ @EnableMethodSecurity[m
+ public class SecurityConfig {[m
+[36m@@ -68,6 +68,13 @@[m [mpublic class SecurityConfig {[m
+                                 "/favicon.ico",[m
+                                 "/error"[m
+                         ).permitAll()[m
+[32m+[m
+[32m+[m[32m                        .requestMatchers([m
+[32m+[m[32m                                "/api/payments/**",[m
+[32m+[m[32m                                "/api/my-wallet/**",[m
+[32m+[m[32m                                "/api/wallet/**"[m
+[32m+[m[32m                        ).hasRole("USER")[m
+[32m+[m
+                         .anyRequest().authenticated()[m
+                 )[m
+ [m
+[1mdiff --git a/src/main/java/com/PayMoney/Controller/PaymentController.java b/src/main/java/com/PayMoney/Controller/PaymentController.java[m
+[1mindex ca6a699..ce337ba 100644[m
+[1m--- a/src/main/java/com/PayMoney/Controller/PaymentController.java[m
+[1m+++ b/src/main/java/com/PayMoney/Controller/PaymentController.java[m
+[36m@@ -1,8 +1,9 @@[m
+[32m+[m
+ package com.PayMoney.Controller;[m
+ [m
+ import com.PayMoney.DTO.PaymentRequestDTO;[m
+ import com.PayMoney.DTO.PaymentResponseDTO;[m
+[31m-import com.PayMoney.DTO.PaymentVerificationRequestDTO;[m
+[32m+[m[32mimport com.PayMoney.DTO.PaymentLinkVerificationRequestDTO;[m
+ import com.PayMoney.Service.PaymentService;[m
+ import io.swagger.v3.oas.annotations.security.SecurityRequirement;[m
+ import jakarta.validation.Valid;[m
+[36m@@ -21,30 +22,22 @@[m [mpublic class PaymentController {[m
+     private PaymentService paymentService;[m
+ [m
+     @PreAuthorize("hasRole('USER')")[m
+[31m-    @PostMapping("/api/payments/createOrder")[m
+[31m-    public ResponseEntity<PaymentResponseDTO> createOrder(@Valid @RequestBody PaymentRequestDTO request) {[m
+[32m+[m[32m    @PostMapping("/api/payments/createLink")[m
+[32m+[m[32m    public ResponseEntity<PaymentResponseDTO> createPaymentLink([m
+[32m+[m[32m            @Valid @RequestBody PaymentRequestDTO request) {[m
+ [m
+[31m-        PaymentResponseDTO response =[m
+[31m-                paymentService.createOrder(request);[m
+[32m+[m[32m        PaymentResponseDTO response = paymentService.createPaymentLink(request);[m
+ [m
+         return ResponseEntity.ok(response);[m
+     }[m
+ [m
+     @PreAuthorize("hasRole('USER')")[m
+[31m-    @PostMapping("/api/payments/verify")[m
+[31m-    public ResponseEntity<String> verifyPayment([m
+[31m-            @Valid @RequestBody PaymentVerificationRequestDTO request) {[m
+[31m-[m
+[31m-        boolean verified =[m
+[31m-                paymentService.verifyPayment(request);[m
+[32m+[m[32m    @PostMapping("/api/payments/verifyLink")[m
+[32m+[m[32m    public ResponseEntity<String> verifyPaymentLink([m
+[32m+[m[32m            @Valid @RequestBody PaymentLinkVerificationRequestDTO request) {[m
+ [m
+[31m-        if (!verified) {[m
+[31m-            return ResponseEntity[m
+[31m-                    .badRequest()[m
+[31m-                    .body("Payment verification failed");[m
+[31m-        }[m
+[32m+[m[32m        paymentService.verifyPaymentLink(request);[m
+ [m
+[31m-        return ResponseEntity.ok([m
+[31m-                "Payment verified successfully");[m
+[32m+[m[32m        return ResponseEntity.ok("Payment verified and wallet credited successfully");[m
+     }[m
+ }[m
+[1mdiff --git a/src/main/java/com/PayMoney/Controller/TransactionController.java b/src/main/java/com/PayMoney/Controller/TransactionController.java[m
+[1mindex 9092461..2c1dd57 100644[m
+[1m--- a/src/main/java/com/PayMoney/Controller/TransactionController.java[m
+[1m+++ b/src/main/java/com/PayMoney/Controller/TransactionController.java[m
+[36m@@ -8,6 +8,7 @@[m [mimport org.springframework.beans.factory.annotation.Autowired;[m
+ import org.springframework.data.domain.Page;[m
+ import org.springframework.data.domain.PageRequest;[m
+ import org.springframework.data.domain.Pageable;[m
+[32m+[m[32mimport org.springframework.data.domain.Sort;[m
+ import org.springframework.http.ResponseEntity;[m
+ import org.springframework.security.access.prepost.PreAuthorize;[m
+ import org.springframework.web.bind.annotation.*;[m
+[36m@@ -19,7 +20,7 @@[m [mpublic class TransactionController {[m
+     @Autowired[m
+     private TransactionService transactionService;[m
+ [m
+[31m-    @GetMapping("/api/transactions/my-walletTransaction")[m
+[32m+[m[32m    @GetMapping("/api/transactions/my-walletTransactions")[m
+     @PreAuthorize("hasRole('USER')")[m
+     public ResponseEntity<Page<TransferResponseDTO>> getWalletTransactions([m
+             @RequestParam(defaultValue = "0") int page,[m
+[36m@@ -29,8 +30,12 @@[m [mpublic class TransactionController {[m
+             throw new IllegalArgumentException([m
+                     "Page must be >= 0 and size must be between 1 and 100");[m
+         }[m
+[31m-[m
+[31m-        Pageable pageable = PageRequest.of(page, size);[m
+[32m+[m[32m        Pageable pageable = PageRequest.of([m
+[32m+[m[32m                page,[m
+[32m+[m[32m                size,[m
+[32m+[m[32m                Sort.by(Sort.Direction.DESC, "createdAt")[m
+[32m+[m[32m                        .and(Sort.by(Sort.Direction.DESC, "transactionId"))[m
+[32m+[m[32m        );[m
+ [m
+         return ResponseEntity.ok([m
+                 transactionService.getWalletTransactions(pageable));[m
+[1mdiff --git a/src/main/java/com/PayMoney/Controller/UserController.java b/src/main/java/com/PayMoney/Controller/UserController.java[m
+[1mindex e40ef46..369fc76 100644[m
+[1m--- a/src/main/java/com/PayMoney/Controller/UserController.java[m
+[1m+++ b/src/main/java/com/PayMoney/Controller/UserController.java[m
+[36m@@ -5,8 +5,14 @@[m [mimport com.PayMoney.Service.UserService;[m
+ import io.swagger.v3.oas.annotations.security.SecurityRequirement;[m
+ import jakarta.validation.Valid;[m
+ import org.springframework.beans.factory.annotation.Autowired;[m
+[32m+[m[32mimport org.springframework.data.domain.Page;[m
+[32m+[m[32mimport org.springframework.data.domain.PageRequest;[m
+[32m+[m[32mimport org.springframework.data.domain.Pageable;[m
+[32m+[m[32mimport org.springframework.data.domain.Sort;[m
+[32m+[m[32mimport org.springframework.http.HttpStatus;[m
+ import org.springframework.security.access.prepost.PreAuthorize;[m
+ import org.springframework.web.bind.annotation.*;[m
+[32m+[m[32mimport org.springframework.web.server.ResponseStatusException;[m
+ [m
+ import java.util.List;[m
+ [m
+[36m@@ -32,11 +38,26 @@[m [mpublic class UserController {[m
+ [m
+     @SecurityRequirement(name = "bearer-key")[m
+     @PreAuthorize("hasRole('ADMIN')")[m
+[31m-    @GetMapping("api/allusers")[m
+[31m-    public List<UserResponseDTO> getAllUsers(){[m
+[31m-[m
+[31m-        return userService.getAllUsers();[m
+[31m-   }[m
+[32m+[m[32m    @GetMapping("/api/allusers")[m
+[32m+[m[32m    public Page<UserResponseDTO> getAllUsers([m
+[32m+[m[32m            @RequestParam(defaultValue = "0") int page,[m
+[32m+[m[32m            @RequestParam(defaultValue = "10") int size) {[m
+[32m+[m
+[32m+[m[32m        if (page < 0 || size < 1 || size > 100) {[m
+[32m+[m[32m            throw new ResponseStatusException([m
+[32m+[m[32m                    HttpStatus.BAD_REQUEST,[m
+[32m+[m[32m                    "Page must be >= 0 and size must be between 1 and 100"[m
+[32m+[m[32m            );[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        Pageable pageable = PageRequest.of([m
+[32m+[m[32m                page,[m
+[32m+[m[32m                size,[m
+[32m+[m[32m                Sort.by(Sort.Direction.ASC, "userId")[m
+[32m+[m[32m        );[m
+[32m+[m
+[32m+[m[32m        return userService.getAllUsers(pageable);[m
+[32m+[m[32m    }[m
+ [m
+     @SecurityRequirement(name = "bearer-key")[m
+     @PreAuthorize("hasRole('ADMIN')")[m
+[1mdiff --git a/src/main/java/com/PayMoney/DTO/PaymentRequestDTO.java b/src/main/java/com/PayMoney/DTO/PaymentRequestDTO.java[m
+[1mindex ae58072..7e5a1e3 100644[m
+[1m--- a/src/main/java/com/PayMoney/DTO/PaymentRequestDTO.java[m
+[1m+++ b/src/main/java/com/PayMoney/DTO/PaymentRequestDTO.java[m
+[36m@@ -1,3 +1,4 @@[m
+[32m+[m
+ package com.PayMoney.DTO;[m
+ [m
+ import jakarta.validation.constraints.DecimalMax;[m
+[36m@@ -12,11 +13,8 @@[m [mimport java.math.BigDecimal;[m
+ public class PaymentRequestDTO {[m
+ [m
+         @NotNull(message = "Amount is required")[m
+[31m-        @DecimalMin(value = "1.00",[m
+[31m-                message = "Amount must be at least 1.00")[m
+[31m-        @DecimalMax(value = "50000.00",[m
+[31m-                message = "Amount cannot exceed 50000")[m
+[31m-        @Digits(integer = 17, fraction = 2,message = "Amount must have at most 2 decimal places")[m
+[32m+[m[32m        @DecimalMin(value = "1.00", message = "Amount must be at least 1.00")[m
+[32m+[m[32m        @DecimalMax(value = "50000.00", message = "Amount cannot exceed 50000")[m
+[32m+[m[32m        @Digits(integer = 17, fraction = 2, message = "Amount must have at most 2 decimal places")[m
+         private BigDecimal amount;[m
+[31m-    }[m
+[31m-[m
+[32m+[m[32m}[m
+[1mdiff --git a/src/main/java/com/PayMoney/DTO/PaymentResponseDTO.java b/src/main/java/com/PayMoney/DTO/PaymentResponseDTO.java[m
+[1mindex e9e0bf0..8cb2d51 100644[m
+[1m--- a/src/main/java/com/PayMoney/DTO/PaymentResponseDTO.java[m
+[1m+++ b/src/main/java/com/PayMoney/DTO/PaymentResponseDTO.java[m
+[36m@@ -1,3 +1,4 @@[m
+[32m+[m
+ package com.PayMoney.DTO;[m
+ [m
+ import lombok.AllArgsConstructor;[m
+[36m@@ -11,7 +12,9 @@[m [mimport java.math.BigDecimal;[m
+ @NoArgsConstructor[m
+ public class PaymentResponseDTO {[m
+ [m
+[31m-    private String orderId;[m
+[32m+[m[32m    private String paymentLinkId;[m
+[32m+[m[32m    private String paymentLinkUrl;[m
+     private BigDecimal amount;[m
+     private String currency;[m
+[32m+[m[32m    private String status;[m
+ }[m
+[1mdiff --git a/src/main/java/com/PayMoney/Entity/PaymentEntity.java b/src/main/java/com/PayMoney/Entity/PaymentEntity.java[m
+[1mindex 77401d1..d17c313 100644[m
+[1m--- a/src/main/java/com/PayMoney/Entity/PaymentEntity.java[m
+[1m+++ b/src/main/java/com/PayMoney/Entity/PaymentEntity.java[m
+[36m@@ -1,3 +1,4 @@[m
+[32m+[m
+ package com.PayMoney.Entity;[m
+ [m
+ import jakarta.persistence.*;[m
+[36m@@ -17,31 +18,35 @@[m [mpublic class PaymentEntity {[m
+ [m
+     @Id[m
+     @GeneratedValue(strategy = GenerationType.IDENTITY)[m
+[32m+[m[32m    @Column(name = "payment_id")[m
+     private Long paymentId;[m
+ [m
+[31m-    @ManyToOne[m
+[31m-    @JoinColumn(name = "userId", nullable = false)[m
+[32m+[m[32m    @ManyToOne(fetch = FetchType.LAZY, optional = false)[m
+[32m+[m[32m    @JoinColumn(name = "user_id", nullable = false)[m
+     private UserEntity user;[m
+ [m
+[31m-    @Column(nullable = false, precision = 19, scale = 2)[m
+[32m+[m[32m    @Column(name = "amount", nullable = false, precision = 19, scale = 2)[m
+     private BigDecimal amount;[m
+ [m
+[31m-    @Column(nullable = false, unique = true)[m
+[31m-    private String razorpayOrderId;[m
+[31m-[m
+[31m-[m
+[31m-    @Column(unique = true)[m
+[32m+[m[32m    @Column(name = "razorpay_payment_id", unique = true)[m
+     private String razorpayPaymentId;[m
+ [m
+[32m+[m[32m    @Column(name = "razorpay_payment_link_id", unique = true)[m
+[32m+[m[32m    private String razorpayPaymentLinkId;[m
+[32m+[m
+[32m+[m[32m    @Column(name = "razorpay_payment_link_reference_id", unique = true)[m
+[32m+[m[32m    private String razorpayPaymentLinkReferenceId;[m
+ [m
+     @Enumerated(EnumType.STRING)[m
+[32m+[m[32m    @Column(name = "status", nullable = false)[m
+     private PaymentStatus status;[m
+ [m
+[31m-    @Column(nullable = false)[m
+[32m+[m[32m    @Column(name = "created_at", nullable = false)[m
+     private LocalDateTime createdAt;[m
+ [m
+[31m-    @Column(precision = 19, scale = 2)[m
+[32m+[m[32m    @Column(name = "refunded_amount", precision = 19, scale = 2)[m
+     private BigDecimal refundedAmount;[m
+ [m
+[32m+[m[32m    @Column(name = "razorpay_refund_id")[m
+     private String razorpayRefundId;[m
+ }[m
+[1mdiff --git a/src/main/java/com/PayMoney/Entity/PaymentStatus.java b/src/main/java/com/PayMoney/Entity/PaymentStatus.java[m
+[1mindex 7d40f8b..3502f49 100644[m
+[1m--- a/src/main/java/com/PayMoney/Entity/PaymentStatus.java[m
+[1m+++ b/src/main/java/com/PayMoney/Entity/PaymentStatus.java[m
+[36m@@ -5,5 +5,6 @@[m [mpublic enum PaymentStatus {[m
+     CREATED,[m
+     SUCCESS,[m
+     FAILED,[m
+[32m+[m[32m    REFUND_PENDING,[m
+     REFUNDED[m
+ }[m
+\ No newline at end of file[m
+[1mdiff --git a/src/main/java/com/PayMoney/Entity/TransactionEntity.java b/src/main/java/com/PayMoney/Entity/TransactionEntity.java[m
+[1mindex 3007854..75cfe38 100644[m
+[1m--- a/src/main/java/com/PayMoney/Entity/TransactionEntity.java[m
+[1m+++ b/src/main/java/com/PayMoney/Entity/TransactionEntity.java[m
+[36m@@ -4,6 +4,7 @@[m [mimport jakarta.persistence.*;[m
+ import lombok.AllArgsConstructor;[m
+ import lombok.Data;[m
+ import lombok.NoArgsConstructor;[m
+[32m+[m[32mimport jakarta.persistence.FetchType;[m
+ [m
+ import java.math.BigDecimal;[m
+ import java.time.LocalDateTime;[m
+[36m@@ -19,11 +20,12 @@[m [mpublic class TransactionEntity {[m
+         @GeneratedValue(strategy = GenerationType.IDENTITY)[m
+         private Long transactionId;[m
+ [m
+[31m-        @ManyToOne[m
+[32m+[m[32m        @ManyToOne(fetch = FetchType.LAZY)[m
+         @JoinColumn(name = "sender_wallet_id",nullable=true)[m
+         private WalletEntity senderWallet;[m
+ [m
+[31m-        @ManyToOne[m
+[32m+[m
+[32m+[m[32m        @ManyToOne(fetch = FetchType.LAZY)[m
+         @JoinColumn(name = "receiver_wallet_id",nullable= true)[m
+         private WalletEntity receiverWallet;[m
+ [m
+[36m@@ -40,5 +42,10 @@[m [mpublic class TransactionEntity {[m
+ [m
+         @Column(nullable = false)[m
+         private LocalDateTime createdAt;[m
+[32m+[m
+[32m+[m[32m        @ManyToOne(fetch = FetchType.LAZY)[m
+[32m+[m[32m        @JoinColumn(name = "payment_id")[m
+[32m+[m[32m        private PaymentEntity payment;[m
+[32m+[m
+     }[m
+ [m
+[1mdiff --git a/src/main/java/com/PayMoney/Entity/UserEntity.java b/src/main/java/com/PayMoney/Entity/UserEntity.java[m
+[1mindex 447c92d..468d490 100644[m
+[1m--- a/src/main/java/com/PayMoney/Entity/UserEntity.java[m
+[1m+++ b/src/main/java/com/PayMoney/Entity/UserEntity.java[m
+[36m@@ -18,7 +18,7 @@[m [mimport java.util.List;[m
+ public class UserEntity {[m
+     @Id[m
+     @GeneratedValue(strategy= GenerationType.IDENTITY)[m
+[31m-    @Column(name = "userId")[m
+[32m+[m[32m    @Column(name = "user_Id")[m
+     private Long  userId;[m
+ [m
+     @Column(nullable = false)[m
+[1mdiff --git a/src/main/java/com/PayMoney/Entity/WalletEntity.java b/src/main/java/com/PayMoney/Entity/WalletEntity.java[m
+[1mindex 1eefd88..59eb0e0 100644[m
+[1m--- a/src/main/java/com/PayMoney/Entity/WalletEntity.java[m
+[1m+++ b/src/main/java/com/PayMoney/Entity/WalletEntity.java[m
+[36m@@ -15,13 +15,15 @@[m [mimport java.math.BigDecimal;[m
+ public class WalletEntity {[m
+     @Id[m
+     @GeneratedValue(strategy = GenerationType.IDENTITY)[m
+[31m-    @Column(name="walletId")[m
+[32m+[m[32m    @Column(name = "wallet_id")[m
+     private Long walletId;[m
+ [m
+[32m+[m[32m    @OneToOne(fetch = FetchType.LAZY, optional = false)[m
+[32m+[m[32m    @JoinColumn(name = "user_id", nullable = false, unique = true)[m
+[32m+[m[32m    private UserEntity user;[m
+[32m+[m
+     @Column(nullable = false, precision = 19, scale = 2)[m
+     private BigDecimal balance;[m
+ [m
+[31m-    @OneToOne[m
+[31m-    @JoinColumn(name = "userId", nullable = false, unique = true)[m
+[31m-    private UserEntity user;[m
+[32m+[m
+ }[m
+[1mdiff --git a/src/main/java/com/PayMoney/Repository/PaymentRepository.java b/src/main/java/com/PayMoney/Repository/PaymentRepository.java[m
+[1mindex fa43a09..001c8a3 100644[m
+[1m--- a/src/main/java/com/PayMoney/Repository/PaymentRepository.java[m
+[1m+++ b/src/main/java/com/PayMoney/Repository/PaymentRepository.java[m
+[36m@@ -12,16 +12,15 @@[m [mimport org.springframework.stereotype.Repository;[m
+ import java.util.Optional;[m
+ [m
+ @Repository[m
+[31m-public interface PaymentRepository[m
+[31m-        extends JpaRepository<PaymentEntity, Long> {[m
+[32m+[m[32mpublic interface PaymentRepository extends JpaRepository<PaymentEntity, Long> {[m
+ [m
+     @Lock(LockModeType.PESSIMISTIC_WRITE)[m
+     @Query("""[m
+             SELECT p FROM PaymentEntity p[m
+[31m-            WHERE p.razorpayOrderId = :orderId[m
+[32m+[m[32m            WHERE p.razorpayPaymentLinkId = :linkId[m
+             """)[m
+[31m-    Optional<PaymentEntity> findByOrderIdForUpdate([m
+[31m-            @Param("orderId") String orderId[m
+[32m+[m[32m    Optional<PaymentEntity> findByRazorpayPaymentLinkIdForUpdate([m
+[32m+[m[32m            @Param("linkId") String linkId[m
+     );[m
+ [m
+     @Lock(LockModeType.PESSIMISTIC_WRITE)[m
+[36m@@ -33,7 +32,4 @@[m [mpublic interface PaymentRepository[m
+             @Param("paymentId") String paymentId[m
+     );[m
+ [m
+[31m-    Optional<PaymentEntity> findByRazorpayPaymentId([m
+[31m-            String razorpayPaymentId[m
+[31m-    );[m
+ }[m
+[1mdiff --git a/src/main/java/com/PayMoney/Repository/TransactionRepository.java b/src/main/java/com/PayMoney/Repository/TransactionRepository.java[m
+[1mindex 20cfd17..3b768ff 100644[m
+[1m--- a/src/main/java/com/PayMoney/Repository/TransactionRepository.java[m
+[1m+++ b/src/main/java/com/PayMoney/Repository/TransactionRepository.java[m
+[36m@@ -1,25 +1,26 @@[m
+[32m+[m
+ package com.PayMoney.Repository;[m
+ [m
+ import com.PayMoney.Entity.TransactionEntity;[m
+ import com.PayMoney.Entity.TransactionStatus;[m
+ import com.PayMoney.Entity.TransactionType;[m
+[32m+[m[32mimport org.springframework.data.domain.Page;[m
+[32m+[m[32mimport org.springframework.data.domain.Pageable;[m
+ import org.springframework.data.jpa.repository.JpaRepository;[m
+ import org.springframework.stereotype.Repository;[m
+ [m
+ import java.time.LocalDateTime;[m
+[31m-import org.springframework.data.domain.Page;[m
+[31m-import org.springframework.data.domain.Pageable;[m
+[32m+[m[32mimport java.util.Optional;[m
+ [m
+ @Repository[m
+[31m-    public interface TransactionRepository[m
+[31m-            extends JpaRepository<TransactionEntity, Long> {[m
+[31m-[m
+[31m-        Page<TransactionEntity> findBySenderWallet_WalletIdOrReceiverWallet_WalletId([m
+[31m-                Long senderWalletId,[m
+[31m-                Long receiverWalletId,[m
+[31m-                Pageable pageable[m
+[31m-        );[m
+[32m+[m[32mpublic interface TransactionRepository[m
+[32m+[m[32m        extends JpaRepository<TransactionEntity, Long> {[m
+ [m
+[32m+[m[32m    Page<TransactionEntity> findBySenderWallet_WalletIdOrReceiverWallet_WalletId([m
+[32m+[m[32m            Long senderWalletId,[m
+[32m+[m[32m            Long receiverWalletId,[m
+[32m+[m[32m            Pageable pageable[m
+[32m+[m[32m    );[m
+ [m
+     long countBySenderWallet_WalletIdAndTypeAndStatusAndCreatedAtAfter([m
+             Long walletId,[m
+[36m@@ -28,5 +29,8 @@[m [mimport org.springframework.data.domain.Pageable;[m
+             LocalDateTime time[m
+     );[m
+ [m
+[32m+[m[32m    Optional<TransactionEntity> findFirstByPayment_PaymentIdAndTypeOrderByTransactionIdDesc([m
+[32m+[m[32m            Long paymentId,[m
+[32m+[m[32m            TransactionType type[m
+[32m+[m[32m    );[m
+ }[m
+[31m-[m
+[1mdiff --git a/src/main/java/com/PayMoney/Service/JwtAuthenticationFilter.java b/src/main/java/com/PayMoney/Service/JwtAuthenticationFilter.java[m
+[1mindex e733327..c056aeb 100644[m
+[1m--- a/src/main/java/com/PayMoney/Service/JwtAuthenticationFilter.java[m
+[1m+++ b/src/main/java/com/PayMoney/Service/JwtAuthenticationFilter.java[m
+[36m@@ -3,6 +3,7 @@[m [mpackage com.PayMoney.Service;[m
+ [m
+ import com.PayMoney.Entity.UserEntity;[m
+ import com.PayMoney.Repository.UserRepository;[m
+[32m+[m[32mimport io.jsonwebtoken.JwtException;[m
+ import jakarta.servlet.FilterChain;[m
+ import jakarta.servlet.ServletException;[m
+ import jakarta.servlet.http.HttpServletRequest;[m
+[36m@@ -29,18 +30,12 @@[m [mpublic class JwtAuthenticationFilter extends OncePerRequestFilter {[m
+     protected void doFilterInternal([m
+             HttpServletRequest request,[m
+             HttpServletResponse response,[m
+[31m-            FilterChain filterChain)[m
+[31m-            throws ServletException, IOException {[m
+[32m+[m[32m            FilterChain filterChain[m
+[32m+[m[32m    ) throws ServletException, IOException {[m
+ [m
+         String authHeader = request.getHeader("Authorization");[m
+ [m
+[31m-        if (authHeader == null) {[m
+[31m-            filterChain.doFilter(request, response);[m
+[31m-            return;[m
+[31m-        }[m
+[31m-[m
+[31m-[m
+[31m-        if (!authHeader.startsWith("Bearer ")) {[m
+[32m+[m[32m        if (authHeader == null || !authHeader.startsWith("Bearer ")) {[m
+             filterChain.doFilter(request, response);[m
+             return;[m
+         }[m
+[36m@@ -48,13 +43,25 @@[m [mpublic class JwtAuthenticationFilter extends OncePerRequestFilter {[m
+         String token = authHeader.substring(7).trim();[m
+ [m
+         if (token.isEmpty()) {[m
+[32m+[m[32m            SecurityContextHolder.clearContext();[m
+             writeUnauthorized(response);[m
+             return;[m
+         }[m
+ [m
+[32m+[m[32m        if (SecurityContextHolder.getContext().getAuthentication() != null) {[m
+[32m+[m[32m            filterChain.doFilter(request, response);[m
+[32m+[m[32m            return;[m
+[32m+[m[32m        }[m
+[32m+[m
+         try {[m
+             String email = jwtService.extractEmail(token);[m
+ [m
+[32m+[m[32m            if (email == null || email.isBlank()) {[m
+[32m+[m[32m                SecurityContextHolder.clearContext();[m
+[32m+[m[32m                writeUnauthorized(response);[m
+[32m+[m[32m                return;[m
+[32m+[m[32m            }[m
+[32m+[m
+             UserEntity userEntity = userRepository[m
+                     .findByEmail(email)[m
+                     .orElse(null);[m
+[36m@@ -65,19 +72,17 @@[m [mpublic class JwtAuthenticationFilter extends OncePerRequestFilter {[m
+                 return;[m
+             }[m
+ [m
+[31m-            if (SecurityContextHolder.getContext().getAuthentication() == null) {[m
+[31m-                UsernamePasswordAuthenticationToken authentication =[m
+[31m-                        new UsernamePasswordAuthenticationToken([m
+[31m-                                userEntity,[m
+[31m-                                null,[m
+[31m-                                userEntity.getAuthorities()[m
+[31m-                        );[m
+[32m+[m[32m            UsernamePasswordAuthenticationToken authentication =[m
+[32m+[m[32m                    new UsernamePasswordAuthenticationToken([m
+[32m+[m[32m                            userEntity,[m
+[32m+[m[32m                            null,[m
+[32m+[m[32m                            userEntity.getAuthorities()[m
+[32m+[m[32m                    );[m
+ [m
+[31m-                SecurityContextHolder.getContext()[m
+[31m-                        .setAuthentication(authentication);[m
+[31m-            }[m
+[32m+[m[32m            SecurityContextHolder.getContext()[m
+[32m+[m[32m                    .setAuthentication(authentication);[m
+ [m
+[31m-        } catch (Exception exception) {[m
+[32m+[m[32m        } catch (JwtException | IllegalArgumentException exception) {[m
+             SecurityContextHolder.clearContext();[m
+             writeUnauthorized(response);[m
+             return;[m
+[36m@@ -92,7 +97,7 @@[m [mpublic class JwtAuthenticationFilter extends OncePerRequestFilter {[m
+         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);[m
+         response.setContentType(MediaType.APPLICATION_JSON_VALUE);[m
+         response.getWriter().write([m
+[31m-                "{\"message\":\"Invalid authentication token\"}"[m
+[32m+[m[32m                "{\"message\":\"Invalid or expired authentication token\"}"[m
+         );[m
+     }[m
+ }[m
+[1mdiff --git a/src/main/java/com/PayMoney/Service/PaymentService.java b/src/main/java/com/PayMoney/Service/PaymentService.java[m
+[1mindex 4782cb3..285dad7 100644[m
+[1m--- a/src/main/java/com/PayMoney/Service/PaymentService.java[m
+[1m+++ b/src/main/java/com/PayMoney/Service/PaymentService.java[m
+[36m@@ -1,16 +1,22 @@[m
+[32m+[m
+ package com.PayMoney.Service;[m
+ [m
+[32m+[m[32mimport com.PayMoney.DTO.PaymentLinkVerificationRequestDTO;[m
+ import com.PayMoney.DTO.PaymentRequestDTO;[m
+ import com.PayMoney.DTO.PaymentResponseDTO;[m
+[31m-import com.PayMoney.DTO.PaymentVerificationRequestDTO;[m
+ import com.PayMoney.DTO.RefundRequestDTO;[m
+ import com.PayMoney.Entity.*;[m
+ import com.PayMoney.Exception.*;[m
+ import com.PayMoney.Repository.PaymentRepository;[m
+ import com.PayMoney.Repository.TransactionRepository;[m
+ import com.PayMoney.Repository.WalletRepository;[m
+[31m-import com.razorpay.*;[m
+[31m-import jakarta.transaction.Transactional;[m
+[32m+[m[32mimport com.razorpay.Payment;[m
+[32m+[m[32mimport com.razorpay.PaymentLink;[m
+[32m+[m[32mimport com.razorpay.RazorpayClient;[m
+[32m+[m[32mimport com.razorpay.RazorpayException;[m
+[32m+[m[32mimport com.razorpay.Refund;[m
+[32m+[m[32mimport com.razorpay.Utils;[m
+[32m+[m[32mimport org.springframework.transaction.annotation.Transactional;[m
+ import org.json.JSONObject;[m
+ import org.slf4j.Logger;[m
+ import org.slf4j.LoggerFactory;[m
+[36m@@ -20,11 +26,13 @@[m [mimport org.springframework.stereotype.Service;[m
+ [m
+ import java.math.BigDecimal;[m
+ import java.time.LocalDateTime;[m
+[32m+[m[32mimport java.util.UUID;[m
+ [m
+ @Service[m
+ public class PaymentService {[m
+ [m
+[31m-    private static final Logger log = LoggerFactory.getLogger(PaymentService.class);[m
+[32m+[m[32m    private static final Logger log =[m
+[32m+[m[32m            LoggerFactory.getLogger(PaymentService.class);[m
+ [m
+     @Autowired[m
+     private RazorpayClient razorpayClient;[m
+[36m@@ -47,100 +55,170 @@[m [mpublic class PaymentService {[m
+     @Value("${razorpay.key.secret}")[m
+     private String keySecret;[m
+ [m
+[31m-    public PaymentResponseDTO createOrder(PaymentRequestDTO request) {[m
+[32m+[m[32m    public PaymentResponseDTO createPaymentLink(PaymentRequestDTO request) {[m
+ [m
+[31m-        UserEntity user = authService.getAuthenticatedUser();[m
+[32m+[m[32m        if (request == null || request.getAmount() == null) {[m
+[32m+[m[32m            throw new InvalidTransactionException([m
+[32m+[m[32m                    "Payment amount is required");[m
+[32m+[m[32m        }[m
+ [m
+         BigDecimal amount = request.getAmount();[m
+ [m
+[31m-        if (amount == null[m
+[31m-                || amount.compareTo(BigDecimal.ONE) < 0[m
+[32m+[m[32m        if (amount.compareTo(new BigDecimal("1.00")) < 0[m
+                 || amount.compareTo(new BigDecimal("50000.00")) > 0[m
+[31m-                || amount.stripTrailingZeros().scale() > 2) {[m
+[31m-[m
+[32m+[m[32m                || amount.stripTrailingZeros().scale() > 2)  {[m
+             throw new InvalidTransactionException([m
+[31m-                    "Amount must be between ₹1 and ₹50,000 with at most 2 decimal places"[m
+[31m-            );[m
+[32m+[m[32m                    "Amount must be between 1 and 50000 with at most two decimal places");[m
+         }[m
+ [m
+[32m+[m[32m        UserEntity user = authService.getAuthenticatedUser();[m
+[32m+[m
+         int amountInPaise = amount[m
+                 .multiply(BigDecimal.valueOf(100))[m
+                 .intValueExact();[m
+ [m
+[31m-        try {[m
+[32m+[m[32m        String referenceId = UUID.randomUUID().toString();[m
+ [m
+[31m-            JSONObject orderRequest = new JSONObject();[m
+[32m+[m[32m        JSONObject customer = new JSONObject();[m
+[32m+[m[32m        customer.put("name", user.getName());[m
+[32m+[m[32m        customer.put("email", user.getEmail());[m
+ [m
+[31m-            orderRequest.put("amount", amountInPaise);[m
+[31m-            orderRequest.put("currency", "INR");[m
+[31m-            orderRequest.put("receipt", "PAY_" + System.currentTimeMillis());[m
+[32m+[m[32m        JSONObject notify = new JSONObject();[m
+[32m+[m[32m        notify.put("email", false);[m
+[32m+[m[32m        notify.put("sms", false);[m
+ [m
+[31m-            Order razorpayOrder =[m
+[31m-                    razorpayClient.orders.create(orderRequest);[m
+[32m+[m[32m        JSONObject linkRequest = new JSONObject();[m
+[32m+[m[32m        linkRequest.put("amount", amountInPaise);[m
+[32m+[m[32m        linkRequest.put("currency", "INR");[m
+[32m+[m[32m        linkRequest.put("accept_partial", false);[m
+[32m+[m[32m        linkRequest.put("reference_id", referenceId);[m
+[32m+[m[32m        linkRequest.put("description", "PayMoney wallet top-up");[m
+[32m+[m[32m        linkRequest.put("customer", customer);[m
+[32m+[m[32m        linkRequest.put("notify", notify);[m
+[32m+[m[32m        linkRequest.put("reminder_enable", false);[m
+ [m
+[31m-            String razorpayOrderId =[m
+[31m-                    razorpayOrder.get("id");[m
+[32m+[m[32m        try {[m
+[32m+[m[32m            PaymentLink razorpayLink =[m
+[32m+[m[32m                    razorpayClient.paymentLink.create(linkRequest);[m
+ [m
+[31m-            PaymentEntity payment = new PaymentEntity();[m
+[32m+[m[32m            String linkId = razorpayLink.get("id");[m
+[32m+[m[32m            String shortUrl = razorpayLink.get("short_url");[m
+[32m+[m
+[32m+[m[32m            if (linkId == null || linkId.isBlank()[m
+[32m+[m[32m                    || shortUrl == null || shortUrl.isBlank()) {[m
+[32m+[m[32m                throw new ExternalServiceException([m
+[32m+[m[32m                        "Payment gateway returned an invalid Payment Link",[m
+[32m+[m[32m                        null);[m
+[32m+[m[32m            }[m
+ [m
+[32m+[m[32m            PaymentEntity payment = new PaymentEntity();[m
+             payment.setUser(user);[m
+             payment.setAmount(amount);[m
+[31m-            payment.setRazorpayOrderId(razorpayOrderId);[m
+[32m+[m[32m            payment.setRazorpayPaymentLinkId(linkId);[m
+[32m+[m[32m            payment.setRazorpayPaymentLinkReferenceId(referenceId);[m
+             payment.setStatus(PaymentStatus.CREATED);[m
+             payment.setCreatedAt(LocalDateTime.now());[m
+ [m
+[31m-            paymentRepository.save(payment);[m
+[32m+[m[32m            paymentRepository.saveAndFlush(payment);[m
+ [m
+             auditLogService.log([m
+                     user.getUserId(),[m
+[31m-                    "PAYMENT",[m
+[31m-                    "Created Razorpay payment order " + razorpayOrderId +[m
+[31m-                            " for amount " + amount[m
+[31m-            );[m
+[32m+[m[32m                    "PAYMENT_LINK_CREATED",[m
+[32m+[m[32m                    "Created Payment Link " + linkId[m
+[32m+[m[32m                            + " for amount " + amount);[m
+ [m
+             return new PaymentResponseDTO([m
+[31m-                    razorpayOrderId,[m
+[32m+[m[32m                    linkId,[m
+[32m+[m[32m                    shortUrl,[m
+                     amount,[m
+[31m-                    "INR"[m
+[31m-            );[m
+[31m-[m
+[31m-        }  catch (RazorpayException e) {[m
+[31m-        log.error("Razorpay order creation failed | userId={} | amount={} | reason={}",[m
+[31m-                user.getUserId(), amount, e.getMessage(), e);[m
+[31m-        throw new ExternalServiceException([m
+[31m-                "Payment gateway request failed", e);[m
+[31m-    }[m
+[31m-    }[m
+[32m+[m[32m                    "INR",[m
+[32m+[m[32m                    "created");[m
+[32m+[m
+[32m+[m[32m        } catch (RazorpayException e) {[m
+[32m+[m[32m            log.error([m
+[32m+[m[32m                    "Razorpay Payment Link creation failed for userId={}",[m
+[32m+[m[32m                    user.getUserId(),[m
+[32m+[m[32m                    e);[m
+ [m
+[32m+[m[32m            throw new ExternalServiceException([m
+[32m+[m[32m                    "Unable to create Payment Link",[m
+[32m+[m[32m                    e);[m
+[32m+[m[32m        }[m
+[32m+[m[32m    }[m
+ [m
+     @Transactional[m
+[31m-    public boolean verifyPayment(PaymentVerificationRequestDTO request) {[m
+[32m+[m[32m    public boolean verifyPaymentLink([m
+[32m+[m[32m            PaymentLinkVerificationRequestDTO request) {[m
+ [m
+         if (request == null) {[m
+             throw new InvalidTransactionException([m
+[31m-                    "Payment verification request cannot be null");[m
+[32m+[m[32m                    "Payment verification request is required");[m
+         }[m
+ [m
+[31m-        PaymentEntity payment = paymentRepository[m
+[31m-                .findByOrderIdForUpdate(request.getRazorpayOrderId())[m
+[31m-                .orElseThrow(() ->[m
+[31m-                        new PaymentNotFoundException("Payment not found"));[m
+[32m+[m[32m        if (!"paid".equalsIgnoreCase([m
+[32m+[m[32m                request.getRazorpayPaymentLinkStatus())) {[m
+[32m+[m[32m            throw new InvalidTransactionException([m
+[32m+[m[32m                    "Payment Link has not been paid");[m
+[32m+[m[32m        }[m
+ [m
+         UserEntity user = authService.getAuthenticatedUser();[m
+ [m
+[32m+[m[32m        JSONObject signatureData = new JSONObject();[m
+[32m+[m[32m        signatureData.put([m
+[32m+[m[32m                "payment_link_id",[m
+[32m+[m[32m                request.getRazorpayPaymentLinkId());[m
+[32m+[m[32m        signatureData.put([m
+[32m+[m[32m                "payment_link_reference_id",[m
+[32m+[m[32m                request.getRazorpayPaymentLinkReferenceId());[m
+[32m+[m[32m        signatureData.put([m
+[32m+[m[32m                "payment_link_status",[m
+[32m+[m[32m                request.getRazorpayPaymentLinkStatus());[m
+[32m+[m[32m        signatureData.put([m
+[32m+[m[32m                "razorpay_payment_id",[m
+[32m+[m[32m                request.getRazorpayPaymentId());[m
+[32m+[m[32m        signatureData.put([m
+[32m+[m[32m                "razorpay_signature",[m
+[32m+[m[32m                request.getRazorpaySignature());[m
+[32m+[m
+[32m+[m[32m        try {[m
+[32m+[m[32m            if (!Utils.verifyPaymentLink(signatureData, keySecret)) {[m
+[32m+[m[32m                throw new InvalidTransactionException([m
+[32m+[m[32m                        "Invalid Payment Link signature");[m
+[32m+[m[32m            }[m
+[32m+[m[32m        } catch (RazorpayException e) {[m
+[32m+[m[32m            log.error("Payment Link signature verification failed", e);[m
+[32m+[m
+[32m+[m[32m            throw new ExternalServiceException([m
+[32m+[m[32m                    "Unable to verify Payment Link signature",[m
+[32m+[m[32m                    e);[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        PaymentEntity payment = paymentRepository[m
+[32m+[m[32m                .findByRazorpayPaymentLinkIdForUpdate([m
+[32m+[m[32m                        request.getRazorpayPaymentLinkId())[m
+[32m+[m[32m                .orElseThrow(() ->[m
+[32m+[m[32m                        new PaymentNotFoundException([m
+[32m+[m[32m                                "Payment Link not found"));[m
+[32m+[m
+         if (!payment.getUser().getUserId().equals(user.getUserId())) {[m
+             throw new InvalidTransactionException([m
+[31m-                    "Payment does not belong to authenticated user");[m
+[32m+[m[32m                    "Payment Link does not belong to authenticated user");[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        if (!payment.getRazorpayPaymentLinkReferenceId().equals([m
+[32m+[m[32m                request.getRazorpayPaymentLinkReferenceId())) {[m
+[32m+[m[32m            throw new InvalidTransactionException([m
+[32m+[m[32m                    "Payment Link reference does not match");[m
+         }[m
+ [m
+         if (payment.getStatus() == PaymentStatus.SUCCESS) {[m
+[31m-            if (request.getRazorpayPaymentId()[m
+[31m-                    .equals(payment.getRazorpayPaymentId())) {[m
+[32m+[m[32m            if (request.getRazorpayPaymentId().equals([m
+[32m+[m[32m                    payment.getRazorpayPaymentId())) {[m
+                 return true;[m
+             }[m
+ [m
+             throw new InvalidTransactionException([m
+[31m-                    "Payment was already completed with a different payment ID");[m
+[32m+[m[32m                    "Payment Link has already been verified with another payment");[m
+         }[m
+ [m
+         if (payment.getStatus() != PaymentStatus.CREATED) {[m
+[36m@@ -148,135 +226,162 @@[m [mpublic class PaymentService {[m
+                     "Payment is not in a verifiable state");[m
+         }[m
+ [m
+[31m-        JSONObject options = new JSONObject();[m
+[31m-        options.put("razorpay_order_id", request.getRazorpayOrderId());[m
+[31m-        options.put("razorpay_payment_id", request.getRazorpayPaymentId());[m
+[31m-        options.put("razorpay_signature", request.getRazorpaySignature());[m
+[31m-[m
+         try {[m
+[31m-            boolean verified =[m
+[31m-                    Utils.verifyPaymentSignature(options, keySecret);[m
+[32m+[m[32m            PaymentLink razorpayLink =[m
+[32m+[m[32m                    razorpayClient.paymentLink.fetch([m
+[32m+[m[32m                            request.getRazorpayPaymentLinkId());[m
+[32m+[m
+[32m+[m[32m            String gatewayLinkStatus = razorpayLink.get("status");[m
+[32m+[m[32m            String gatewayReferenceId = razorpayLink.get("reference_id");[m
+[32m+[m[32m            String gatewayCurrency = razorpayLink.get("currency");[m
+ [m
+[31m-            if (!verified) {[m
+[32m+[m[32m            if (!"paid".equalsIgnoreCase(gatewayLinkStatus)) {[m
+                 throw new InvalidTransactionException([m
+[31m-                        "Invalid payment signature");[m
+[32m+[m[32m                        "Razorpay has not marked this Payment Link as paid");[m
+             }[m
+[31m-        } catch (RazorpayException e) {[m
+[31m-            log.error("Razorpay signature verification failed | orderId={}",[m
+[31m-                    request.getRazorpayOrderId(), e);[m
+ [m
+[31m-            throw new ExternalServiceException([m
+[31m-                    "Payment verification failed", e);[m
+[31m-        }[m
+[32m+[m[32m            if (!request.getRazorpayPaymentLinkReferenceId()[m
+[32m+[m[32m                    .equals(gatewayReferenceId)) {[m
+[32m+[m[32m                throw new InvalidTransactionException([m
+[32m+[m[32m                        "Gateway Payment Link reference does not match");[m
+[32m+[m[32m            }[m
+ [m
+[31m-        Payment razorpayPayment;[m
+[32m+[m[32m            if (!"INR".equals(gatewayCurrency)) {[m
+[32m+[m[32m                throw new InvalidTransactionException([m
+[32m+[m[32m                        "Payment currency is invalid");[m
+[32m+[m[32m            }[m
+ [m
+[31m-        try {[m
+[31m-            razorpayPayment = razorpayClient.payments.fetch([m
+[31m-                    request.getRazorpayPaymentId());[m
+[32m+[m[32m            Object linkAmountValue = razorpayLink.get("amount");[m
+[32m+[m[32m            Object paidAmountValue = razorpayLink.get("amount_paid");[m
+ [m
+[31m-        } catch (RazorpayException e) {[m
+[31m-            log.error("Failed to fetch Razorpay payment | paymentId={}",[m
+[31m-                    request.getRazorpayPaymentId(), e);[m
+[32m+[m[32m            if (!(linkAmountValue instanceof Number)[m
+[32m+[m[32m                    || !(paidAmountValue instanceof Number)) {[m
+[32m+[m[32m                throw new InvalidTransactionException([m
+[32m+[m[32m                        "Invalid amount returned for Payment Link");[m
+[32m+[m[32m            }[m
+ [m
+[31m-            throw new ExternalServiceException([m
+[31m-                    "Unable to verify payment status", e);[m
+[31m-        }[m
+[32m+[m[32m            int expectedAmount = payment.getAmount()[m
+[32m+[m[32m                    .multiply(BigDecimal.valueOf(100))[m
+[32m+[m[32m                    .intValueExact();[m
+ [m
+[31m-        String actualOrderId = razorpayPayment.get("order_id");[m
+[32m+[m[32m            int linkAmount = ((Number) linkAmountValue).intValue();[m
+[32m+[m[32m            int paidAmount = ((Number) paidAmountValue).intValue();[m
+ [m
+[31m-        if (!request.getRazorpayOrderId().equals(actualOrderId)) {[m
+[31m-            throw new InvalidTransactionException([m
+[31m-                    "Payment does not belong to the specified order");[m
+[31m-        }[m
+[32m+[m[32m            if (linkAmount != expectedAmount[m
+[32m+[m[32m                    || paidAmount != expectedAmount) {[m
+[32m+[m[32m                throw new InvalidTransactionException([m
+[32m+[m[32m                        "Payment Link amount does not match the requested amount");[m
+[32m+[m[32m            }[m
+ [m
+[31m-        String status = razorpayPayment.get("status");[m
+[32m+[m[32m            Payment razorpayPayment =[m
+[32m+[m[32m                    razorpayClient.payments.fetch([m
+[32m+[m[32m                            request.getRazorpayPaymentId());[m
+ [m
+[31m-        if (!"captured".equals(status)) {[m
+[31m-            throw new InvalidTransactionException([m
+[31m-                    "Payment has not been captured yet");[m
+[31m-        }[m
+[32m+[m[32m            String gatewayPaymentStatus = razorpayPayment.get("status");[m
+[32m+[m[32m            String gatewayPaymentCurrency = razorpayPayment.get("currency");[m
+[32m+[m[32m            String gatewayLinkId = razorpayPayment.get("payment_link_id");[m
+ [m
+[31m-        Object amountValue = razorpayPayment.get("amount");[m
+[32m+[m[32m            if (!"captured".equalsIgnoreCase(gatewayPaymentStatus)) {[m
+[32m+[m[32m                throw new InvalidTransactionException([m
+[32m+[m[32m                        "Razorpay payment has not been captured");[m
+[32m+[m[32m            }[m
+ [m
+[31m-        if (!(amountValue instanceof Number)) {[m
+[31m-            throw new InvalidTransactionException([m
+[31m-                    "Invalid payment amount returned by Razorpay");[m
+[31m-        }[m
+[32m+[m[32m            if (!request.getRazorpayPaymentLinkId().equals(gatewayLinkId)) {[m
+[32m+[m[32m                throw new InvalidTransactionException([m
+[32m+[m[32m                        "Payment does not belong to the specified Payment Link");[m
+[32m+[m[32m            }[m
+ [m
+[31m-        int actualAmount = ((Number) amountValue).intValue();[m
+[32m+[m[32m            if (!"INR".equals(gatewayPaymentCurrency)) {[m
+[32m+[m[32m                throw new InvalidTransactionException([m
+[32m+[m[32m                        "Payment currency is invalid");[m
+[32m+[m[32m            }[m
+ [m
+[31m-        int expectedAmount = payment.getAmount()[m
+[31m-                .multiply(BigDecimal.valueOf(100))[m
+[31m-                .intValueExact();[m
+[32m+[m[32m            Object paymentAmountValue = razorpayPayment.get("amount");[m
+ [m
+[31m-        if (actualAmount != expectedAmount) {[m
+[31m-            throw new InvalidTransactionException([m
+[31m-                    "Payment amount does not match the order amount");[m
+[31m-        }[m
+[32m+[m[32m            if (!(paymentAmountValue instanceof Number)[m
+[32m+[m[32m                    || ((Number) paymentAmountValue).intValue()[m
+[32m+[m[32m                    != expectedAmount) {[m
+[32m+[m[32m                throw new InvalidTransactionException([m
+[32m+[m[32m                        "Captured payment amount does not match");[m
+[32m+[m[32m            }[m
+ [m
+[31m-        String currency = razorpayPayment.get("currency");[m
+[32m+[m[32m            WalletEntity wallet = walletRepository[m
+[32m+[m[32m                    .findWalletForUpdateByUserId(user.getUserId())[m
+[32m+[m[32m                    .orElseThrow(() ->[m
+[32m+[m[32m                            new WalletNotFoundException([m
+[32m+[m[32m                                    "Wallet not found"));[m
+ [m
+[31m-        if (!"INR".equals(currency)) {[m
+[31m-            throw new InvalidTransactionException([m
+[31m-                    "Invalid payment currency");[m
+[31m-        }[m
+[32m+[m[32m            payment.setRazorpayPaymentId([m
+[32m+[m[32m                    request.getRazorpayPaymentId());[m
+[32m+[m[32m            payment.setStatus(PaymentStatus.SUCCESS);[m
+[32m+[m[32m            paymentRepository.save(payment);[m
+ [m
+[31m-        WalletEntity wallet = walletRepository[m
+[31m-                .findWalletForUpdateByUserId(user.getUserId())[m
+[31m-                .orElseThrow(() ->[m
+[31m-                        new WalletNotFoundException("Wallet not found"));[m
+[32m+[m[32m            wallet.setBalance([m
+[32m+[m[32m                    wallet.getBalance().add(payment.getAmount()));[m
+[32m+[m[32m            walletRepository.save(wallet);[m
+ [m
+[31m-        payment.setRazorpayPaymentId(request.getRazorpayPaymentId());[m
+[31m-        payment.setStatus(PaymentStatus.SUCCESS);[m
+[31m-        paymentRepository.save(payment);[m
+[32m+[m[32m            TransactionEntity transaction = new TransactionEntity();[m
+[32m+[m[32m            transaction.setSenderWallet(null);[m
+[32m+[m[32m            transaction.setReceiverWallet(wallet);[m
+[32m+[m[32m            transaction.setAmount(payment.getAmount());[m
+[32m+[m[32m            transaction.setType(TransactionType.DEPOSIT);[m
+[32m+[m[32m            transaction.setStatus(TransactionStatus.SUCCESS);[m
+[32m+[m[32m            transaction.setCreatedAt(LocalDateTime.now());[m
+[32m+[m[32m            transaction.setPayment(payment);[m
+ [m
+[31m-        wallet.setBalance(wallet.getBalance().add(payment.getAmount()));[m
+[31m-        walletRepository.save(wallet);[m
+[32m+[m[32m            transactionRepository.save(transaction);[m
+ [m
+[31m-        TransactionEntity transaction = new TransactionEntity();[m
+[31m-        transaction.setSenderWallet(null);[m
+[31m-        transaction.setReceiverWallet(wallet);[m
+[31m-        transaction.setAmount(payment.getAmount());[m
+[31m-        transaction.setType(TransactionType.DEPOSIT);[m
+[31m-        transaction.setStatus(TransactionStatus.SUCCESS);[m
+[31m-        transaction.setCreatedAt(LocalDateTime.now());[m
+[32m+[m[32m            auditLogService.log([m
+[32m+[m[32m                    user.getUserId(),[m
+[32m+[m[32m                    "PAYMENT_LINK_VERIFIED",[m
+[32m+[m[32m                    "Verified Payment Link "[m
+[32m+[m[32m                            + request.getRazorpayPaymentLinkId()[m
+[32m+[m[32m                            + " for amount " + payment.getAmount());[m
+ [m
+[31m-        transactionRepository.save(transaction);[m
+[32m+[m[32m            return true;[m
+ [m
+[31m-        auditLogService.log([m
+[31m-                user.getUserId(),[m
+[31m-                "PAYMENT_VERIFIED",[m
+[31m-                "Payment verified successfully for amount "[m
+[31m-                        + payment.getAmount());[m
+[32m+[m[32m        } catch (RazorpayException e) {[m
+[32m+[m[32m            log.error([m
+[32m+[m[32m                    "Payment Link verification failed for linkId={}",[m
+[32m+[m[32m                    request.getRazorpayPaymentLinkId(),[m
+[32m+[m[32m                    e);[m
+ [m
+[31m-        return true;[m
+[32m+[m[32m            throw new ExternalServiceException([m
+[32m+[m[32m                    "Unable to verify payment with Razorpay",[m
+[32m+[m[32m                    e);[m
+[32m+[m[32m        }[m
+     }[m
+ [m
+     @Transactional[m
+     public void refundPayment(RefundRequestDTO request) {[m
+ [m
+[32m+[m[32m        if (request == null[m
+[32m+[m[32m                || request.getRazorpayPaymentId() == null[m
+[32m+[m[32m                || request.getRazorpayPaymentId().isBlank()) {[m
+[32m+[m[32m            throw new InvalidTransactionException([m
+[32m+[m[32m                    "Valid refund payment ID is required");[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        UserEntity user = authService.getAuthenticatedUser();[m
+[32m+[m
+         PaymentEntity payment = paymentRepository[m
+                 .findByRazorpayPaymentIdForUpdate([m
+                         request.getRazorpayPaymentId())[m
+                 .orElseThrow(() ->[m
+[31m-                        new PaymentNotFoundException("Payment not found"));[m
+[31m-        UserEntity user =[m
+[31m-                authService.getAuthenticatedUser();[m
+[31m-[m
+[31m-        if (!payment.getUser().getUserId()[m
+[31m-                .equals(user.getUserId())) {[m
+[32m+[m[32m                        new PaymentNotFoundException([m
+[32m+[m[32m                                "Payment not found"));[m
+ [m
+[32m+[m[32m        if (!payment.getUser().getUserId().equals(user.getUserId())) {[m
+             throw new InvalidTransactionException([m
+                     "Payment does not belong to authenticated user");[m
+         }[m
+ [m
+[31m-        if (payment.getStatus() == PaymentStatus.REFUNDED) {[m
+[32m+[m[32m        if (payment.getStatus() == PaymentStatus.REFUNDED[m
+[32m+[m[32m                || payment.getStatus() == PaymentStatus.REFUND_PENDING) {[m
+             throw new InvalidTransactionException([m
+[31m-                    "Payment has already been refunded");[m
+[32m+[m[32m                    "Payment is already refunded or refund is pending");[m
+         }[m
+ [m
+[31m-[m
+         if (payment.getStatus() != PaymentStatus.SUCCESS) {[m
+             throw new InvalidTransactionException([m
+                     "Only successful payments can be refunded");[m
+[36m@@ -285,64 +390,62 @@[m [mpublic class PaymentService {[m
+         WalletEntity wallet = walletRepository[m
+                 .findWalletForUpdateByUserId(user.getUserId())[m
+                 .orElseThrow(() ->[m
+[31m-                        new WalletNotFoundException("Wallet not found"));[m
+[31m-[m
+[31m-        if (wallet.getBalance()[m
+[31m-                .compareTo(payment.getAmount()) < 0) {[m
+[32m+[m[32m                        new WalletNotFoundException([m
+[32m+[m[32m                                "Wallet not found"));[m
+ [m
+[32m+[m[32m        if (wallet.getBalance().compareTo(payment.getAmount()) < 0) {[m
+             throw new InsufficientBalanceException([m
+                     "Insufficient wallet balance for refund");[m
+         }[m
+ [m
+         try {[m
+[32m+[m[32m            Refund refund = razorpayClient.payments.refund([m
+[32m+[m[32m                    request.getRazorpayPaymentId());[m
+ [m
+[31m-            Refund refund =[m
+[31m-                    razorpayClient.payments.refund([m
+[31m-                            request.getRazorpayPaymentId());[m
+[31m-[m
+[31m-            payment.setRazorpayRefundId([m
+[31m-                    refund.get("id"));[m
+[32m+[m[32m            String refundId = refund.get("id");[m
+ [m
+[31m-            payment.setRefundedAmount([m
+[31m-                    payment.getAmount());[m
+[32m+[m[32m            if (refundId == null || refundId.isBlank()) {[m
+[32m+[m[32m                throw new ExternalServiceException([m
+[32m+[m[32m                        "Refund gateway returned no refund ID",[m
+[32m+[m[32m                        null);[m
+[32m+[m[32m            }[m
+ [m
+[32m+[m[32m            payment.setRazorpayRefundId(refundId);[m
+[32m+[m[32m            payment.setRefundedAmount(payment.getAmount());[m
+             payment.setStatus(PaymentStatus.REFUNDED);[m
+[31m-[m
+             paymentRepository.save(payment);[m
+ [m
+             wallet.setBalance([m
+[31m-                    wallet.getBalance()[m
+[31m-                            .subtract(payment.getAmount()));[m
+[31m-[m
+[32m+[m[32m                    wallet.getBalance().subtract(payment.getAmount()));[m
+             walletRepository.save(wallet);[m
+ [m
+[31m-            TransactionEntity transaction =[m
+[31m-                    new TransactionEntity();[m
+[31m-[m
+[32m+[m[32m            TransactionEntity transaction = new TransactionEntity();[m
+             transaction.setSenderWallet(wallet);[m
+             transaction.setReceiverWallet(null);[m
+             transaction.setAmount(payment.getAmount());[m
+             transaction.setType(TransactionType.REFUND);[m
+             transaction.setStatus(TransactionStatus.SUCCESS);[m
+             transaction.setCreatedAt(LocalDateTime.now());[m
+[32m+[m[32m            transaction.setPayment(payment);[m
+ [m
+             transactionRepository.save(transaction);[m
+ [m
+             auditLogService.log([m
+[31m-                    payment.getUser().getUserId(),[m
+[32m+[m[32m                    user.getUserId(),[m
+                     "REFUND",[m
+[31m-                    "Refunded payment of amount " + payment.getAmount()[m
+[31m-            );[m
+[32m+[m[32m                    "Refunded payment "[m
+[32m+[m[32m                            + request.getRazorpayPaymentId()[m
+[32m+[m[32m                            + " for amount " + payment.getAmount());[m
+ [m
+         } catch (RazorpayException e) {[m
+[31m-        log.error("Razorpay refund failed | paymentId={} | amount={} | reason={}",[m
+[31m-                request.getRazorpayPaymentId(),[m
+[31m-                payment.getAmount(),[m
+[31m-                e.getMessage(), e);[m
+[31m-        throw new ExternalServiceException([m
+[31m-                "Refund request failed", e);[m
+[31m-    }[m
+[31m-    }[m
+[31m-[m
+[32m+[m[32m            log.error([m
+[32m+[m[32m                    "Razorpay refund failed for paymentId={}",[m
+[32m+[m[32m                    request.getRazorpayPaymentId(),[m
+[32m+[m[32m                    e);[m
+ [m
+[31m-}[m
+\ No newline at end of file[m
+[32m+[m[32m            throw new ExternalServiceException([m
+[32m+[m[32m                    "Refund request failed; verify gateway status before retrying",[m
+[32m+[m[32m                    e);[m
+[32m+[m[32m        }[m
+[32m+[m[32m    }[m
+[32m+[m[32m}[m
+[1mdiff --git a/src/main/java/com/PayMoney/Service/TransactionService.java b/src/main/java/com/PayMoney/Service/TransactionService.java[m
+[1mindex 64ef3d1..d127d30 100644[m
+[1m--- a/src/main/java/com/PayMoney/Service/TransactionService.java[m
+[1m+++ b/src/main/java/com/PayMoney/Service/TransactionService.java[m
+[36m@@ -141,6 +141,32 @@[m [mpublic class TransactionService {[m
+                 .orElseThrow(() ->[m
+                         new WalletNotFoundException("Wallet not found"));[m
+ [m
+[32m+[m[32m        Optional<IdempotencyEntity> existingAfterLock =[m
+[32m+[m[32m                idempotencyRepository.findByIdempotencyKey(idempotencyKey);[m
+[32m+[m
+[32m+[m[32m        if (existingAfterLock.isPresent()) {[m
+[32m+[m[32m            IdempotencyEntity savedKey = existingAfterLock.get();[m
+[32m+[m
+[32m+[m[32m            if (!savedKey.getUserId().equals(user.getUserId())) {[m
+[32m+[m[32m                throw new InvalidTransactionException([m
+[32m+[m[32m                        "Idempotency key belongs to another user");[m
+[32m+[m[32m            }[m
+[32m+[m
+[32m+[m[32m            if (savedKey.getRequestHash() == null[m
+[32m+[m[32m                    || !savedKey.getRequestHash().equals(requestHash)) {[m
+[32m+[m[32m                throw new InvalidTransactionException([m
+[32m+[m[32m                        "Idempotency key was already used for a different transfer");[m
+[32m+[m[32m            }[m
+[32m+[m
+[32m+[m[32m            TransactionEntity originalTransaction =[m
+[32m+[m[32m                    transactionRepository.findById(savedKey.getTransactionId())[m
+[32m+[m[32m                            .orElseThrow(() ->[m
+[32m+[m[32m                                    new InvalidTransactionException([m
+[32m+[m[32m                                            "Original transaction not found"));[m
+[32m+[m
+[32m+[m[32m            return transactionMapper.toDTO(originalTransaction);[m
+[32m+[m[32m        }[m
+[32m+[m
+         WalletEntity sender = senderId.equals(firstId)[m
+                 ? firstWallet[m
+                 : secondWallet;[m
+[1mdiff --git a/src/main/java/com/PayMoney/Service/UserService.java b/src/main/java/com/PayMoney/Service/UserService.java[m
+[1mindex b550e70..ad93739 100644[m
+[1m--- a/src/main/java/com/PayMoney/Service/UserService.java[m
+[1m+++ b/src/main/java/com/PayMoney/Service/UserService.java[m
+[36m@@ -10,6 +10,8 @@[m [mimport com.PayMoney.Repository.WalletRepository;[m
+ import jakarta.transaction.Transactional;[m
+ import lombok.AllArgsConstructor;[m
+ import org.springframework.beans.factory.annotation.Autowired;[m
+[32m+[m[32mimport org.springframework.data.domain.Page;[m
+[32m+[m[32mimport org.springframework.data.domain.Pageable;[m
+ import org.springframework.security.crypto.password.PasswordEncoder;[m
+ import org.springframework.stereotype.Service;[m
+ import com.PayMoney.Exception.UserNotFoundException;[m
+[36m@@ -17,7 +19,7 @@[m [mimport org.springframework.security.authentication.BadCredentialsException;[m
+ [m
+ [m
+ import java.math.BigDecimal;[m
+[31m-import java.util.List;[m
+[32m+[m
+ [m
+ [m
+ @Service[m
+[36m@@ -88,11 +90,9 @@[m [mpublic class UserService {[m
+         return new LoginResponseDTO(token);[m
+     }[m
+ [m
+[31m-    public List<UserResponseDTO> getAllUsers() {[m
+[31m-        return userRepository.findAll()[m
+[31m-                .stream()[m
+[31m-                .map(userMapper::toDTO)[m
+[31m-                .toList();[m
+[32m+[m[32m    public Page<UserResponseDTO> getAllUsers(Pageable pageable) {[m
+[32m+[m[32m        return userRepository.findAll(pageable)[m
+[32m+[m[32m                .map(userMapper::toDTO);[m
+     }[m
+     public UserResponseDTO getUserById(Long userId) {[m
+ [m

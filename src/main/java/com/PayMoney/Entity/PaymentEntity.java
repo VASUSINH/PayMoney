@@ -1,3 +1,4 @@
+
 package com.PayMoney.Entity;
 
 import jakarta.persistence.*;
@@ -17,31 +18,35 @@ public class PaymentEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "payment_id")
     private Long paymentId;
 
-    @ManyToOne
-    @JoinColumn(name = "userId", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
     private UserEntity user;
 
-    @Column(nullable = false, precision = 19, scale = 2)
+    @Column(name = "amount", nullable = false, precision = 19, scale = 2)
     private BigDecimal amount;
 
-    @Column(nullable = false, unique = true)
-    private String razorpayOrderId;
-
-
-    @Column(unique = true)
+    @Column(name = "razorpay_payment_id", unique = true)
     private String razorpayPaymentId;
 
+    @Column(name = "razorpay_payment_link_id", unique = true)
+    private String razorpayPaymentLinkId;
+
+    @Column(name = "razorpay_payment_link_reference_id", unique = true)
+    private String razorpayPaymentLinkReferenceId;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
     private PaymentStatus status;
 
-    @Column(nullable = false)
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    @Column(precision = 19, scale = 2)
+    @Column(name = "refunded_amount", precision = 19, scale = 2)
     private BigDecimal refundedAmount;
 
+    @Column(name = "razorpay_refund_id")
     private String razorpayRefundId;
 }

@@ -1,3 +1,4 @@
+
 package com.PayMoney.Config;
 
 import com.PayMoney.Service.JwtAuthenticationFilter;
@@ -13,7 +14,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
 
 @Configuration
 @EnableMethodSecurity
@@ -68,6 +68,13 @@ public class SecurityConfig {
                                 "/favicon.ico",
                                 "/error"
                         ).permitAll()
+
+                        .requestMatchers(
+                                "/api/payments/**",
+                                "/api/my-wallet/**",
+                                "/api/wallet/**"
+                        ).hasRole("USER")
+
                         .anyRequest().authenticated()
                 )
 

@@ -1,3 +1,4 @@
+
 package com.PayMoney.DTO;
 
 import lombok.AllArgsConstructor;
@@ -11,7 +12,9 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 public class PaymentResponseDTO {
 
-    private String orderId;
+    private String paymentLinkId;
+    private String paymentLinkUrl;
     private BigDecimal amount;
     private String currency;
+    private String status;
 }

@@ -3,6 +3,7 @@ package com.PayMoney.Service;
 
 import com.PayMoney.Entity.UserEntity;
 import com.PayMoney.Repository.UserRepository;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,18 +30,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,
-            FilterChain filterChain)
-            throws ServletException, IOException {
+            FilterChain filterChain
+    ) throws ServletException, IOException {
 
         String authHeader = request.getHeader("Authorization");
 
-        if (authHeader == null) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
-
-        if (!authHeader.startsWith("Bearer ")) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -48,12 +43,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = authHeader.substring(7).trim();
 
         if (token.isEmpty()) {
+            SecurityContextHolder.clearContext();
             writeUnauthorized(response);
+            return;
+        }
+
+        if (SecurityContextHolder.getContext().getAuthentication() != null) {
+            filterChain.doFilter(request, response);
             return;
         }
 
         try {
             String email = jwtService.extractEmail(token);
+
+            if (email == null || email.isBlank()) {
+                SecurityContextHolder.clearContext();
+                writeUnauthorized(response);
+                return;
+            }
 
             UserEntity userEntity = userRepository
                     .findByEmail(email)
@@ -65,19 +72,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
 
-            if (SecurityContextHolder.getContext().getAuthentication() == null) {
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(
-                                userEntity,
-                                null,
-                                userEntity.getAuthorities()
-                        );
+            UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(
+                            userEntity,
+                            null,
+                            userEntity.getAuthorities()
+                    );
 
-                SecurityContextHolder.getContext()
-                        .setAuthentication(authentication);
-            }
+            SecurityContextHolder.getContext()
+                    .setAuthentication(authentication);
 
-        } catch (Exception exception) {
+        } catch (JwtException | IllegalArgumentException exception) {
             SecurityContextHolder.clearContext();
             writeUnauthorized(response);
             return;
@@ -92,7 +97,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.getWriter().write(
-                "{\"message\":\"Invalid authentication token\"}"
+                "{\"message\":\"Invalid or expired authentication token\"}"
         );
     }
 }

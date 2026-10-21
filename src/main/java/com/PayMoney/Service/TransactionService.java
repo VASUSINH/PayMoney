@@ -141,6 +141,32 @@ public class TransactionService {
                 .orElseThrow(() ->
                         new WalletNotFoundException("Wallet not found"));
 
+        Optional<IdempotencyEntity> existingAfterLock =
+                idempotencyRepository.findByIdempotencyKey(idempotencyKey);
+
+        if (existingAfterLock.isPresent()) {
+            IdempotencyEntity savedKey = existingAfterLock.get();
+
+            if (!savedKey.getUserId().equals(user.getUserId())) {
+                throw new InvalidTransactionException(
+                        "Idempotency key belongs to another user");
+            }
+
+            if (savedKey.getRequestHash() == null
+                    || !savedKey.getRequestHash().equals(requestHash)) {
+                throw new InvalidTransactionException(
+                        "Idempotency key was already used for a different transfer");
+            }
+
+            TransactionEntity originalTransaction =
+                    transactionRepository.findById(savedKey.getTransactionId())
+                            .orElseThrow(() ->
+                                    new InvalidTransactionException(
+                                            "Original transaction not found"));
+
+            return transactionMapper.toDTO(originalTransaction);
+        }
+
         WalletEntity sender = senderId.equals(firstId)
                 ? firstWallet
                 : secondWallet;

@@ -1,8 +1,9 @@
+
 package com.PayMoney.Controller;
 
 import com.PayMoney.DTO.PaymentRequestDTO;
 import com.PayMoney.DTO.PaymentResponseDTO;
-import com.PayMoney.DTO.PaymentVerificationRequestDTO;
+import com.PayMoney.DTO.PaymentLinkVerificationRequestDTO;
 import com.PayMoney.Service.PaymentService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
@@ -21,30 +22,22 @@ public class PaymentController {
     private PaymentService paymentService;
 
     @PreAuthorize("hasRole('USER')")
-    @PostMapping("/api/payments/createOrder")
-    public ResponseEntity<PaymentResponseDTO> createOrder(@Valid @RequestBody PaymentRequestDTO request) {
+    @PostMapping("/api/payments/createLink")
+    public ResponseEntity<PaymentResponseDTO> createPaymentLink(
+            @Valid @RequestBody PaymentRequestDTO request) {
 
-        PaymentResponseDTO response =
-                paymentService.createOrder(request);
+        PaymentResponseDTO response = paymentService.createPaymentLink(request);
 
         return ResponseEntity.ok(response);
     }
 
     @PreAuthorize("hasRole('USER')")
-    @PostMapping("/api/payments/verify")
-    public ResponseEntity<String> verifyPayment(
-            @Valid @RequestBody PaymentVerificationRequestDTO request) {
+    @PostMapping("/api/payments/verifyLink")
+    public ResponseEntity<String> verifyPaymentLink(
+            @Valid @RequestBody PaymentLinkVerificationRequestDTO request) {
 
-        boolean verified =
-                paymentService.verifyPayment(request);
+        paymentService.verifyPaymentLink(request);
 
-        if (!verified) {
-            return ResponseEntity
-                    .badRequest()
-                    .body("Payment verification failed");
-        }
-
-        return ResponseEntity.ok(
-                "Payment verified successfully");
+        return ResponseEntity.ok("Payment verified and wallet credited successfully");
     }
 }

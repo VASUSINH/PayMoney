@@ -12,16 +12,15 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface PaymentRepository
-        extends JpaRepository<PaymentEntity, Long> {
+public interface PaymentRepository extends JpaRepository<PaymentEntity, Long> {
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
             SELECT p FROM PaymentEntity p
-            WHERE p.razorpayOrderId = :orderId
+            WHERE p.razorpayPaymentLinkId = :linkId
             """)
-    Optional<PaymentEntity> findByOrderIdForUpdate(
-            @Param("orderId") String orderId
+    Optional<PaymentEntity> findByRazorpayPaymentLinkIdForUpdate(
+            @Param("linkId") String linkId
     );
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
@@ -33,7 +32,4 @@ public interface PaymentRepository
             @Param("paymentId") String paymentId
     );
 
-    Optional<PaymentEntity> findByRazorpayPaymentId(
-            String razorpayPaymentId
-    );
 }
