@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
+
 import java.util.Collection;
 import java.util.List;
 
@@ -32,6 +33,10 @@ public class UserEntity {
 
     @Column(nullable = false)
     private String role;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "account_status", nullable = false, length = 20)
+    private AccountStatus accountStatus = AccountStatus.ACTIVE;
 
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(

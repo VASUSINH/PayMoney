@@ -6,6 +6,7 @@ import com.PayMoney.Entity.TransactionType;
 import com.PayMoney.Repository.TransactionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
@@ -17,7 +18,13 @@ public class FraudService {
     @Autowired
     private TransactionRepository transactionRepository;
 
+    @Transactional(readOnly = true)
     public boolean isSuspicious(Long senderWalletId) {
+
+        if (senderWalletId == null) {
+            throw new IllegalArgumentException(
+                    "Sender wallet ID is required");
+        }
 
         LocalDateTime oneMinuteAgo =
                 LocalDateTime.now().minusMinutes(1);
@@ -28,8 +35,7 @@ public class FraudService {
                                 senderWalletId,
                                 TransactionType.TRANSFER,
                                 TransactionStatus.SUCCESS,
-                                oneMinuteAgo
-                        );
+                                oneMinuteAgo);
 
         return recentTransfers >= MAX_TRANSACTIONS_PER_MINUTE;
     }

@@ -10,9 +10,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @SecurityRequirement(name = "bearer-key")
 @RestController
@@ -22,7 +20,7 @@ public class PaymentController {
     private PaymentService paymentService;
 
     @PreAuthorize("hasRole('USER')")
-    @PostMapping("/api/payments/createLink")
+    @PostMapping("/api/v1/payment-links")
     public ResponseEntity<PaymentResponseDTO> createPaymentLink(
             @Valid @RequestBody PaymentRequestDTO request) {
 
@@ -32,7 +30,7 @@ public class PaymentController {
     }
 
     @PreAuthorize("hasRole('USER')")
-    @PostMapping("/api/payments/verifyLink")
+    @PostMapping("/api/v1/payment-link-verifications")
     public ResponseEntity<String> verifyPaymentLink(
             @Valid @RequestBody PaymentLinkVerificationRequestDTO request) {
 
@@ -40,4 +38,38 @@ public class PaymentController {
 
         return ResponseEntity.ok("Payment verified and wallet credited successfully");
     }
+
+    @GetMapping("/api/v1/payment-links/callback")
+    public ResponseEntity<String> paymentLinkCallback(
+            @RequestParam("razorpay_payment_link_id")
+            String paymentLinkId,
+
+            @RequestParam("razorpay_payment_id")
+            String paymentId,
+
+            @RequestParam("razorpay_payment_link_reference_id")
+            String referenceId,
+
+            @RequestParam("razorpay_payment_link_status")
+            String linkStatus,
+
+            @RequestParam("razorpay_signature")
+            String signature) {
+
+        PaymentLinkVerificationRequestDTO request =
+                new PaymentLinkVerificationRequestDTO();
+
+        request.setRazorpayPaymentLinkId(paymentLinkId);
+        request.setRazorpayPaymentId(paymentId);
+        request.setRazorpayPaymentLinkReferenceId(referenceId);
+        request.setRazorpayPaymentLinkStatus(linkStatus);
+        request.setRazorpaySignature(signature);
+
+        paymentService.verifyPaymentLinkCallback(request);
+
+        return ResponseEntity.ok(
+                "Payment processed. You can return to PayMoney."
+        );
+    }
+
 }

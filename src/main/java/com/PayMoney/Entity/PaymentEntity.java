@@ -44,9 +44,8 @@ public class PaymentEntity {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "refunded_amount", precision = 19, scale = 2)
-    private BigDecimal refundedAmount;
 
-    @Column(name = "razorpay_refund_id")
-    private String razorpayRefundId;
+    @Column(name = "wallet_credited", nullable = false)
+    private boolean walletCredited = false;
+
 }

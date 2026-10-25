@@ -10,11 +10,12 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
+import java.util.Map;
 
 @RestController
 public class UserController {
@@ -24,13 +25,13 @@ public class UserController {
 
 
 
-    @PostMapping("api/register")
+    @PostMapping("/api/v1/register-user")
     public UserResponseDTO register(@Valid @RequestBody UserRequestDTO add_userdto){
 
         return userService.register(add_userdto);
     }
 
-    @PostMapping("/api/login")
+    @PostMapping("/api/v1/auth/login")
     public LoginResponseDTO login(@Valid @RequestBody LoginRequestDTO loginRequest) {
 
         return userService.login(loginRequest);
@@ -38,7 +39,7 @@ public class UserController {
 
     @SecurityRequirement(name = "bearer-key")
     @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping("/api/allusers")
+    @GetMapping("/api/v1/all-users")
     public Page<UserResponseDTO> getAllUsers(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
@@ -61,29 +62,42 @@ public class UserController {
 
     @SecurityRequirement(name = "bearer-key")
     @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping("/api/getUserById/{id}")
-    public UserResponseDTO getUserById(@PathVariable Long id) {
+    @GetMapping("/api/v1/users/{userId}")
+    public UserResponseDTO getUserById(@PathVariable Long userId) {
 
-        return userService.getUserById(id);
+        return userService.getUserById(userId);
     }
 
 
     @SecurityRequirement(name = "bearer-key")
-    @PutMapping("/api/updateUser/{id}")
+    @PutMapping("/api/v1/users/{userId}")
     @PreAuthorize("hasRole('ADMIN')")
     public UserResponseDTO updateUser(
-            @PathVariable Long id,
+            @PathVariable Long userId,
             @Valid @RequestBody ProfileUpdateDTO userRequest) {
 
-        return userService.updateUser(id, userRequest);
+        return userService.updateUser(userId, userRequest);
     }
 
+    @PatchMapping("/api/v1/users/me/deactivate")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<Map<String, String>> deactivateMyAccount() {
 
-    @SecurityRequirement(name = "bearer-key")
-    @DeleteMapping("/api/deleteUser/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public void deleteUser(@PathVariable Long id) {
-        userService.deleteUser(id);
+        userService.deactivateMyAccount();
+
+        return ResponseEntity.ok(
+                Map.of("message", "Account successfully deactivated")
+        );
     }
 
+    @PostMapping("/api/v1/auth/reactivate")
+    public ResponseEntity<Map<String, String>> reactivateMyAccount(
+            @Valid @RequestBody ReactivateAccountRequestDTO request) {
+
+        userService.reactivateMyAccount(request);
+
+        return ResponseEntity.ok(
+                Map.of("message", "Account successfully reactivated")
+        );
+    }
 }

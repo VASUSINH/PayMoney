@@ -22,8 +22,7 @@ public class IdempotencyEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "idempotency_key",
-            nullable = false, unique = true, length = 64)
+    @Column(name = "idempotency_key", nullable = false, unique = true, length = 64)
     private String idempotencyKey;
 
     @Column(name = "user_id", nullable = false)

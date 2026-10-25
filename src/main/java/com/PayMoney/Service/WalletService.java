@@ -10,6 +10,8 @@ import com.PayMoney.Exception.WalletNotFoundException;
 import com.PayMoney.Mapper.walletMapper;
 import com.PayMoney.Repository.WalletRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -29,6 +31,9 @@ public class WalletService {
     @Autowired
     private TransactionService transactionService;
 
+    @Cacheable(
+            cacheNames = "walletByUserId",
+            key = "@authService.getAuthenticatedUser().getUserId()")
     public WalletResponseDTO getMyWallet() {
 
         UserEntity user = authService.getAuthenticatedUser();
@@ -41,6 +46,7 @@ public class WalletService {
         return walletMapper.toDTO(wallet);
     }
 
+    @CacheEvict(cacheNames = "walletByUserId", allEntries = true)
     public TransferResponseDTO transfer(
             TransferRequestDTO request,
             String idempotencyKey) {
@@ -48,6 +54,7 @@ public class WalletService {
         return transactionService.transfer(request, idempotencyKey);
     }
 
+    @CacheEvict(cacheNames = "walletByUserId", allEntries = true)
     public TransferResponseDTO withdraw(
             BigDecimal amount, String idempotencyKey) {
 

@@ -1,6 +1,7 @@
 
 package com.PayMoney.Service;
 
+import com.PayMoney.Entity.AccountStatus;
 import com.PayMoney.Entity.UserEntity;
 import com.PayMoney.Repository.UserRepository;
 import io.jsonwebtoken.JwtException;
@@ -66,9 +67,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     .findByEmail(email)
                     .orElse(null);
 
-            if (userEntity == null || !jwtService.isTokenValid(token, userEntity)) {
+            if (userEntity == null
+                    || !jwtService.isTokenValid(token, userEntity)) {
                 SecurityContextHolder.clearContext();
                 writeUnauthorized(response);
+                return;
+            }
+
+            if (userEntity.getAccountStatus() != AccountStatus.ACTIVE) {
+                SecurityContextHolder.clearContext();
+                writeForbidden(response);
                 return;
             }
 
@@ -98,6 +106,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.getWriter().write(
                 "{\"message\":\"Invalid or expired authentication token\"}"
+        );
+    }
+
+    private void writeForbidden(HttpServletResponse response)
+            throws IOException {
+
+        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.getWriter().write(
+                "{\"message\":\"Account is deactivated. Reactivate your account to continue.\"}"
         );
     }
 }

@@ -1,3 +1,4 @@
+
 package com.PayMoney.Entity;
 
 import jakarta.persistence.*;
@@ -11,8 +12,9 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name="wallets")
+@Table(name = "wallets")
 public class WalletEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "wallet_id")
@@ -25,5 +27,6 @@ public class WalletEntity {
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal balance;
 
-
+    @Column(name = "name", nullable = false, length = 100)
+    private String name;
 }

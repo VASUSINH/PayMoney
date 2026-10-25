@@ -82,7 +82,9 @@ class TransactionServiceTest {
         WalletEntity wallet = new WalletEntity();
         wallet.setWalletId(walletId);
         wallet.setUser(user);
+        wallet.setName(user.getName());
         wallet.setBalance(new BigDecimal(balance));
+
         return wallet;
     }
 

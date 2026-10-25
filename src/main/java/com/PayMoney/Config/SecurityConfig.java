@@ -2,14 +2,14 @@
 package com.PayMoney.Config;
 
 import com.PayMoney.Service.JwtAuthenticationFilter;
+import com.PayMoney.Service.RateLimitFilter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -28,59 +28,54 @@ public class SecurityConfig {
     }
 
     @Bean
+    public RateLimitFilter rateLimitFilter(
+            StringRedisTemplate redisTemplate) {
+        return new RateLimitFilter(redisTemplate);
+    }
+
+    @Bean
+    public FilterRegistrationBean<RateLimitFilter>
+    disableRateLimitServletRegistration(RateLimitFilter filter) {
+
+        FilterRegistrationBean<RateLimitFilter> registration =
+                new FilterRegistrationBean<>(filter);
+
+        registration.setEnabled(false);
+        return registration;
+    }
+
+    @Bean
     public SecurityFilterChain securityFilterChain(
-            HttpSecurity http) throws Exception {
+            HttpSecurity http,
+            RateLimitFilter rateLimitFilter) throws Exception {
 
         http
                 .csrf(csrf -> csrf.disable())
-                .formLogin(form -> form.disable())
-                .httpBasic(basic -> basic.disable())
-
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
-                .exceptionHandling(exceptions -> exceptions
-                        .authenticationEntryPoint((request, response, exception) -> {
-                            response.setStatus(HttpStatus.UNAUTHORIZED.value());
-                            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                            response.getWriter().write(
-                                    "{\"message\":\"Authentication is required or the token is invalid\"}"
-                            );
-                        })
-                        .accessDeniedHandler((request, response, exception) -> {
-                            response.setStatus(HttpStatus.FORBIDDEN.value());
-                            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                            response.getWriter().write(
-                                    "{\"message\":\"You do not have permission to access this resource\"}"
-                            );
-                        })
-                )
-
+                .addFilterBefore(
+                        jwtAuthenticationFilter,
+                        UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(
+                        rateLimitFilter,
+                        JwtAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/api/register",
-                                "/api/login",
+                                "/api/v1/register-user",
+                                "/api/v1/auth/login",
+                                "/api/v1/auth/reactivate",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**",
                                 "/actuator/health",
-                                "/actuator/health/**",
+                                "/add-money.html",
                                 "/favicon.ico",
                                 "/error"
                         ).permitAll()
-
                         .requestMatchers(
                                 "/api/payments/**",
                                 "/api/my-wallet/**",
                                 "/api/wallet/**"
                         ).hasRole("USER")
-
                         .anyRequest().authenticated()
-                )
-
-                .addFilterBefore(
-                        jwtAuthenticationFilter,
-                        UsernamePasswordAuthenticationFilter.class
                 );
 
         return http.build();

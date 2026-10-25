@@ -20,13 +20,13 @@ public class WalletController {
     @Autowired
     private WalletService walletService;
 
-    @GetMapping("/api/my-wallet")
+    @GetMapping("/api/v1/wallet")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<WalletResponseDTO> getMyWallet() {
         return ResponseEntity.ok(walletService.getMyWallet());
     }
 
-    @PostMapping("/api/wallet/transfer")
+    @PostMapping("/api/v1/transfers")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<TransferResponseDTO> transfer(
             @Valid @RequestBody TransferRequestDTO request,
@@ -36,7 +36,7 @@ public class WalletController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/api/wallet/withdraw")
+    @PostMapping("/api/v1/withdrawals")
     @PreAuthorize("hasRole('USER')")
     public TransferResponseDTO withdraw(
             @Valid @RequestBody WithdrawRequestDTO request,

@@ -20,7 +20,7 @@ public class TransactionController {
     @Autowired
     private TransactionService transactionService;
 
-    @GetMapping("/api/transactions/my-walletTransactions")
+    @GetMapping("/api/v1/wallet/transactions")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<Page<TransferResponseDTO>> getWalletTransactions(
             @RequestParam(defaultValue = "0") int page,
@@ -41,7 +41,7 @@ public class TransactionController {
                 transactionService.getWalletTransactions(pageable));
     }
 
-    @GetMapping("/api/transactions/{transactionId}")
+    @GetMapping("/api/v1/transactions/{transactionId}")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<TransferResponseDTO> getTransactionById(
             @PathVariable Long transactionId) {

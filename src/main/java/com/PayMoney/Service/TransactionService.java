@@ -1,3 +1,4 @@
+
 package com.PayMoney.Service;
 
 import com.PayMoney.DTO.TransferRequestDTO;
@@ -11,24 +12,20 @@ import com.PayMoney.Mapper.TransactionMapper;
 import com.PayMoney.Repository.IdempotencyRepository;
 import com.PayMoney.Repository.TransactionRepository;
 import com.PayMoney.Repository.WalletRepository;
-
 import org.springframework.beans.factory.annotation.Autowired;
-
-
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.Optional;
-
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
 import java.util.HexFormat;
-
-import org.springframework.data.domain.Pageable;
-import org.springframework.transaction.annotation.Transactional;
+import java.util.Optional;
 
 @Service
 public class TransactionService {
@@ -54,8 +51,6 @@ public class TransactionService {
     @Autowired
     private AuditLogService auditLogService;
 
-
-
     @Transactional
     public TransferResponseDTO transfer(
             TransferRequestDTO request,
@@ -66,15 +61,7 @@ public class TransactionService {
                     "Transfer request is required");
         }
 
-        if (idempotencyKey == null || idempotencyKey.isBlank()) {
-            throw new InvalidTransactionException(
-                    "Idempotency-Key header is required");
-        }
-
-        if (idempotencyKey.length() > 64) {
-            throw new InvalidTransactionException(
-                    "Idempotency key must not exceed 64 characters");
-        }
+        validateIdempotencyKey(idempotencyKey);
 
         if (request.getSenderWalletId() == null
                 || request.getReceiverWalletId() == null) {
@@ -84,11 +71,8 @@ public class TransactionService {
 
         validateAmount(request.getAmount());
 
-        String requestHash = generateRequestHash(request);
-
         Long senderId = request.getSenderWalletId();
         Long receiverId = request.getReceiverWalletId();
-
 
         if (senderId.equals(receiverId)) {
             throw new InvalidTransactionException(
@@ -97,84 +81,47 @@ public class TransactionService {
 
         UserEntity user = authService.getAuthenticatedUser();
 
+        String requestHash = generateTransferRequestHash(request);
 
-        Optional<IdempotencyEntity> existing =
-                idempotencyRepository.findByIdempotencyKey(idempotencyKey);
+        Optional<TransferResponseDTO> existing =
+                findExistingIdempotentTransaction(
+                        idempotencyKey,
+                        user.getUserId(),
+                        requestHash);
 
         if (existing.isPresent()) {
-
-            IdempotencyEntity savedKey = existing.get();
-
-            if (!savedKey.getUserId().equals(user.getUserId())) {
-                throw new InvalidTransactionException(
-                        "Idempotency key belongs to another user");
-            }
-
-            if (savedKey.getRequestHash() == null) {
-                throw new InvalidTransactionException(
-                        "Existing idempotency record has no request hash");
-            }
-
-            if (!savedKey.getRequestHash().equals(requestHash)) {
-                throw new InvalidTransactionException(
-                        "Idempotency key was already used for a different transfer");
-            }
-
-            TransactionEntity existingTransaction =
-                    transactionRepository.findById(savedKey.getTransactionId())
-                            .orElseThrow(() ->
-                                    new InvalidTransactionException(
-                                            "Original transaction not found"));
-
-            return transactionMapper.toDTO(existingTransaction);
+            return existing.get();
         }
 
 
         Long firstId = Math.min(senderId, receiverId);
         Long secondId = Math.max(senderId, receiverId);
 
-        WalletEntity firstWallet = walletRepository.findWalletForUpdate(firstId)
+        WalletEntity firstWallet = walletRepository
+                .findWalletForUpdate(firstId)
                 .orElseThrow(() ->
                         new WalletNotFoundException("Wallet not found"));
 
-        WalletEntity secondWallet = walletRepository.findWalletForUpdate(secondId)
+        WalletEntity secondWallet = walletRepository
+                .findWalletForUpdate(secondId)
                 .orElseThrow(() ->
                         new WalletNotFoundException("Wallet not found"));
 
-        Optional<IdempotencyEntity> existingAfterLock =
-                idempotencyRepository.findByIdempotencyKey(idempotencyKey);
 
-        if (existingAfterLock.isPresent()) {
-            IdempotencyEntity savedKey = existingAfterLock.get();
+        existing = findExistingIdempotentTransaction(
+                idempotencyKey,
+                user.getUserId(),
+                requestHash);
 
-            if (!savedKey.getUserId().equals(user.getUserId())) {
-                throw new InvalidTransactionException(
-                        "Idempotency key belongs to another user");
-            }
-
-            if (savedKey.getRequestHash() == null
-                    || !savedKey.getRequestHash().equals(requestHash)) {
-                throw new InvalidTransactionException(
-                        "Idempotency key was already used for a different transfer");
-            }
-
-            TransactionEntity originalTransaction =
-                    transactionRepository.findById(savedKey.getTransactionId())
-                            .orElseThrow(() ->
-                                    new InvalidTransactionException(
-                                            "Original transaction not found"));
-
-            return transactionMapper.toDTO(originalTransaction);
+        if (existing.isPresent()) {
+            return existing.get();
         }
 
         WalletEntity sender = senderId.equals(firstId)
-                ? firstWallet
-                : secondWallet;
+                ? firstWallet : secondWallet;
 
         WalletEntity receiver = receiverId.equals(firstId)
-                ? firstWallet
-                : secondWallet;
-
+                ? firstWallet : secondWallet;
 
         if (!sender.getUser().getUserId().equals(user.getUserId())) {
             throw new InvalidTransactionException(
@@ -182,28 +129,25 @@ public class TransactionService {
         }
 
         if (fraudService.isSuspicious(senderId)) {
-
             throw new InvalidTransactionException(
                     "Transaction flagged for fraud review");
         }
 
         if (sender.getBalance().compareTo(request.getAmount()) < 0) {
-            throw new InsufficientBalanceException("Insufficient wallet balance");
+            throw new InsufficientBalanceException(
+                    "Insufficient wallet balance");
         }
 
         sender.setBalance(
-                sender.getBalance().subtract(request.getAmount())
-        );
+                sender.getBalance().subtract(request.getAmount()));
 
         receiver.setBalance(
-                receiver.getBalance().add(request.getAmount())
-        );
+                receiver.getBalance().add(request.getAmount()));
 
         walletRepository.save(sender);
         walletRepository.save(receiver);
 
         TransactionEntity transaction = new TransactionEntity();
-
         transaction.setSenderWallet(sender);
         transaction.setReceiverWallet(receiver);
         transaction.setAmount(request.getAmount());
@@ -212,56 +156,25 @@ public class TransactionService {
         transaction.setCreatedAt(LocalDateTime.now());
 
         TransactionEntity savedTransaction =
-                transactionRepository.save(transaction);
-        IdempotencyEntity idempotency =
-                new IdempotencyEntity();
+                transactionRepository.saveAndFlush(transaction);
 
-        idempotency.setIdempotencyKey(idempotencyKey);
-        idempotency.setUserId(user.getUserId());
-        idempotency.setTransactionId(
-                savedTransaction.getTransactionId());
-        idempotency.setCreatedAt(LocalDateTime.now());
-
-        idempotency.setRequestHash(requestHash);
-
-        idempotencyRepository.save(idempotency);
+        saveIdempotencyRecord(
+                idempotencyKey,
+                user.getUserId(),
+                savedTransaction.getTransactionId(),
+                requestHash);
 
         auditLogService.log(
                 user.getUserId(),
                 "TRANSFER",
-                "Transferred " + request.getAmount() +
-                        " from wallet " + request.getSenderWalletId() +
-                        " to wallet " + request.getReceiverWalletId()
-        );
+                "Transferred " + request.getAmount()
+                        + " from wallet " + senderId
+                        + " to wallet " + receiverId);
 
         return transactionMapper.toDTO(savedTransaction);
     }
 
-    private String generateRequestHash(TransferRequestDTO request) {
-        String transferDetails =
-                request.getSenderWalletId() + ":" +
-                        request.getReceiverWalletId() + ":" +
-                        request.getAmount()
-                                .stripTrailingZeros()
-                                .toPlainString();
-
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-
-            byte[] hash = digest.digest(
-                    transferDetails.getBytes(StandardCharsets.UTF_8)
-            );
-
-            return HexFormat.of().formatHex(hash);
-
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException(
-                    "Unable to generate transfer request hash", e
-            );
-        }
-    }
-
-
+    @Transactional(readOnly = true)
     public Page<TransferResponseDTO> getWalletTransactions(
             Pageable pageable) {
 
@@ -282,7 +195,13 @@ public class TransactionService {
         return transactions.map(transactionMapper::toDTO);
     }
 
+    @Transactional(readOnly = true)
     public TransferResponseDTO getTransactionById(Long transactionId) {
+
+        if (transactionId == null) {
+            throw new InvalidTransactionException(
+                    "Transaction ID is required");
+        }
 
         UserEntity user = authService.getAuthenticatedUser();
 
@@ -298,14 +217,14 @@ public class TransactionService {
                                         "Transaction not found"));
 
         boolean isSender =
-                transaction.getSenderWallet() != null &&
-                        transaction.getSenderWallet().getWalletId()
-                                .equals(userWallet.getWalletId());
+                transaction.getSenderWallet() != null
+                        && transaction.getSenderWallet()
+                        .getWalletId().equals(userWallet.getWalletId());
 
         boolean isReceiver =
-                transaction.getReceiverWallet() != null &&
-                        transaction.getReceiverWallet().getWalletId()
-                                .equals(userWallet.getWalletId());
+                transaction.getReceiverWallet() != null
+                        && transaction.getReceiverWallet()
+                        .getWalletId().equals(userWallet.getWalletId());
 
         if (!isSender && !isReceiver) {
             throw new InvalidTransactionException(
@@ -314,9 +233,6 @@ public class TransactionService {
 
         return transactionMapper.toDTO(transaction);
     }
-
-
-
 
     @Transactional
     public TransferResponseDTO withdraw(
@@ -333,7 +249,9 @@ public class TransactionService {
 
         Optional<TransferResponseDTO> existing =
                 findExistingIdempotentTransaction(
-                        idempotencyKey, user.getUserId(), requestHash);
+                        idempotencyKey,
+                        user.getUserId(),
+                        requestHash);
 
         if (existing.isPresent()) {
             return existing.get();
@@ -344,9 +262,10 @@ public class TransactionService {
                 .orElseThrow(() ->
                         new WalletNotFoundException("Wallet not found"));
 
-
         existing = findExistingIdempotentTransaction(
-                idempotencyKey, user.getUserId(), requestHash);
+                idempotencyKey,
+                user.getUserId(),
+                requestHash);
 
         if (existing.isPresent()) {
             return existing.get();
@@ -369,55 +288,42 @@ public class TransactionService {
         transaction.setCreatedAt(LocalDateTime.now());
 
         TransactionEntity savedTransaction =
-                transactionRepository.save(transaction);
+                transactionRepository.saveAndFlush(transaction);
 
-        IdempotencyEntity idempotency = new IdempotencyEntity();
-        idempotency.setIdempotencyKey(idempotencyKey);
-        idempotency.setUserId(user.getUserId());
-        idempotency.setTransactionId(
-                savedTransaction.getTransactionId());
-        idempotency.setRequestHash(requestHash);
-        idempotency.setCreatedAt(LocalDateTime.now());
-
-        idempotencyRepository.save(idempotency);
+        saveIdempotencyRecord(
+                idempotencyKey,
+                user.getUserId(),
+                savedTransaction.getTransactionId(),
+                requestHash);
 
         auditLogService.log(
                 user.getUserId(),
                 "WITHDRAW",
                 "Withdrew " + amount
-                        + " from wallet " + wallet.getWalletId()
-        );
+                        + " from wallet " + wallet.getWalletId());
 
         return transactionMapper.toDTO(savedTransaction);
     }
 
-    private void validateIdempotencyKey(String idempotencyKey) {
-        if (idempotencyKey == null || idempotencyKey.isBlank()) {
-            throw new InvalidTransactionException(
-                    "Idempotency-Key header is required");
-        }
+    private void saveIdempotencyRecord(
+            String key,
+            Long userId,
+            Long transactionId,
+            String requestHash) {
 
-        if (idempotencyKey.length() > 64) {
-            throw new InvalidTransactionException(
-                    "Idempotency key must not exceed 64 characters");
-        }
-    }
+        IdempotencyEntity idempotency = new IdempotencyEntity();
+        idempotency.setIdempotencyKey(key);
+        idempotency.setUserId(userId);
+        idempotency.setTransactionId(transactionId);
+        idempotency.setRequestHash(requestHash);
+        idempotency.setCreatedAt(LocalDateTime.now());
 
-    private String generateWithdrawalRequestHash(
-            Long userId, BigDecimal amount) {
-
-        String details = "WITHDRAW:" + userId + ":"
-                + amount.stripTrailingZeros().toPlainString();
 
         try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-
-            return HexFormat.of().formatHex(
-                    digest.digest(details.getBytes(StandardCharsets.UTF_8)));
-
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException(
-                    "Unable to generate withdrawal request hash", e);
+            idempotencyRepository.saveAndFlush(idempotency);
+        } catch (DataIntegrityViolationException exception) {
+            throw new InvalidTransactionException(
+                    "This idempotency key was already used by another request");
         }
     }
 
@@ -455,9 +361,19 @@ public class TransactionService {
         return Optional.of(transactionMapper.toDTO(transaction));
     }
 
+    private void validateIdempotencyKey(String idempotencyKey) {
+        if (idempotencyKey == null || idempotencyKey.isBlank()) {
+            throw new InvalidTransactionException(
+                    "Idempotency-Key header is required");
+        }
+
+        if (idempotencyKey.length() > 64) {
+            throw new InvalidTransactionException(
+                    "Idempotency key must not exceed 64 characters");
+        }
+    }
 
     private void validateAmount(BigDecimal amount) {
-
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new InvalidTransactionException(
                     "Amount must be greater than zero");
@@ -468,14 +384,44 @@ public class TransactionService {
                     "Amount cannot exceed 50000.00");
         }
 
-        if (amount.scale() > 2) {
+        if (amount.stripTrailingZeros().scale() > 2) {
             throw new InvalidTransactionException(
                     "Amount cannot have more than two decimal places");
         }
     }
 
+    private String generateTransferRequestHash(
+            TransferRequestDTO request) {
 
+        String details = "TRANSFER:"
+                + request.getSenderWalletId() + ":"
+                + request.getReceiverWalletId() + ":"
+                + request.getAmount().stripTrailingZeros().toPlainString();
 
+        return sha256(details);
+    }
 
+    private String generateWithdrawalRequestHash(
+            Long userId,
+            BigDecimal amount) {
+
+        String details = "WITHDRAW:"
+                + userId + ":"
+                + amount.stripTrailingZeros().toPlainString();
+
+        return sha256(details);
+    }
+
+    private String sha256(String details) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+
+            return HexFormat.of().formatHex(
+                    digest.digest(details.getBytes(StandardCharsets.UTF_8)));
+
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException(
+                    "Unable to generate request hash", exception);
+        }
+    }
 }
-

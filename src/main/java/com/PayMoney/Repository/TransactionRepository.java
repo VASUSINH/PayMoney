@@ -28,9 +28,15 @@ public interface TransactionRepository
             TransactionStatus status,
             LocalDateTime time
     );
-
-    Optional<TransactionEntity> findFirstByPayment_PaymentIdAndTypeOrderByTransactionIdDesc(
+    Optional<TransactionEntity>
+    findFirstByPayment_PaymentIdAndTypeAndStatusOrderByTransactionIdDesc(
             Long paymentId,
-            TransactionType type
+            TransactionType type,
+            TransactionStatus status
     );
+
+
+
+
+
 }

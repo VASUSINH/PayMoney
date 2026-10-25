@@ -4,7 +4,6 @@ package com.PayMoney.Service;
 import com.PayMoney.DTO.PaymentLinkVerificationRequestDTO;
 import com.PayMoney.DTO.PaymentRequestDTO;
 import com.PayMoney.DTO.PaymentResponseDTO;
-import com.PayMoney.DTO.RefundRequestDTO;
 import com.PayMoney.Entity.*;
 import com.PayMoney.Exception.*;
 import com.PayMoney.Repository.PaymentRepository;
@@ -14,15 +13,16 @@ import com.razorpay.Payment;
 import com.razorpay.PaymentLink;
 import com.razorpay.RazorpayClient;
 import com.razorpay.RazorpayException;
-import com.razorpay.Refund;
 import com.razorpay.Utils;
-import org.springframework.transaction.annotation.Transactional;
+import org.json.JSONArray;
 import org.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -55,7 +55,11 @@ public class PaymentService {
     @Value("${razorpay.key.secret}")
     private String keySecret;
 
-    public PaymentResponseDTO createPaymentLink(PaymentRequestDTO request) {
+    @Value("${app.public-base-url}")
+    private String publicBaseUrl;
+
+    public PaymentResponseDTO createPaymentLink(
+            PaymentRequestDTO request) {
 
         if (request == null || request.getAmount() == null) {
             throw new InvalidTransactionException(
@@ -66,9 +70,10 @@ public class PaymentService {
 
         if (amount.compareTo(new BigDecimal("1.00")) < 0
                 || amount.compareTo(new BigDecimal("50000.00")) > 0
-                || amount.stripTrailingZeros().scale() > 2)  {
+                || amount.stripTrailingZeros().scale() > 2) {
             throw new InvalidTransactionException(
-                    "Amount must be between 1 and 50000 with at most two decimal places");
+                    "Amount must be between 1 and 50000 "
+                            + "with at most two decimal places");
         }
 
         UserEntity user = authService.getAuthenticatedUser();
@@ -96,6 +101,10 @@ public class PaymentService {
         linkRequest.put("customer", customer);
         linkRequest.put("notify", notify);
         linkRequest.put("reminder_enable", false);
+        linkRequest.put(
+                "callback_url",
+                publicBaseUrl + "/api/payments/callback");
+        linkRequest.put("callback_method", "get");
 
         try {
             PaymentLink razorpayLink =
@@ -118,6 +127,7 @@ public class PaymentService {
             payment.setRazorpayPaymentLinkReferenceId(referenceId);
             payment.setStatus(PaymentStatus.CREATED);
             payment.setCreatedAt(LocalDateTime.now());
+            payment.setWalletCredited(false);
 
             paymentRepository.saveAndFlush(payment);
 
@@ -147,12 +157,40 @@ public class PaymentService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "walletByUserId", allEntries = true)
     public boolean verifyPaymentLink(
             PaymentLinkVerificationRequestDTO request) {
 
-        if (request == null) {
+        UserEntity user = authService.getAuthenticatedUser();
+
+        return verifyPaymentLinkInternal(request, user);
+    }
+
+    @Transactional
+    @CacheEvict(cacheNames = "walletByUserId", allEntries = true)
+    public boolean verifyPaymentLinkCallback(
+            PaymentLinkVerificationRequestDTO request) {
+
+        return verifyPaymentLinkInternal(request, null);
+    }
+
+    private boolean verifyPaymentLinkInternal(
+            PaymentLinkVerificationRequestDTO request,
+            UserEntity authenticatedUser) {
+
+        if (request == null
+                || request.getRazorpayPaymentLinkId() == null
+                || request.getRazorpayPaymentLinkId().isBlank()
+                || request.getRazorpayPaymentId() == null
+                || request.getRazorpayPaymentId().isBlank()
+                || request.getRazorpayPaymentLinkReferenceId() == null
+                || request.getRazorpayPaymentLinkReferenceId().isBlank()
+                || request.getRazorpayPaymentLinkStatus() == null
+                || request.getRazorpayPaymentLinkStatus().isBlank()
+                || request.getRazorpaySignature() == null
+                || request.getRazorpaySignature().isBlank()) {
             throw new InvalidTransactionException(
-                    "Payment verification request is required");
+                    "Required payment verification details are missing");
         }
 
         if (!"paid".equalsIgnoreCase(
@@ -161,163 +199,173 @@ public class PaymentService {
                     "Payment Link has not been paid");
         }
 
-        UserEntity user = authService.getAuthenticatedUser();
-
-        JSONObject signatureData = new JSONObject();
-        signatureData.put(
-                "payment_link_id",
-                request.getRazorpayPaymentLinkId());
-        signatureData.put(
-                "payment_link_reference_id",
-                request.getRazorpayPaymentLinkReferenceId());
-        signatureData.put(
-                "payment_link_status",
-                request.getRazorpayPaymentLinkStatus());
-        signatureData.put(
-                "razorpay_payment_id",
-                request.getRazorpayPaymentId());
-        signatureData.put(
-                "razorpay_signature",
-                request.getRazorpaySignature());
-
         try {
-            if (!Utils.verifyPaymentLink(signatureData, keySecret)) {
+            JSONObject signatureData = new JSONObject();
+
+            signatureData.put(
+                    "payment_link_id",
+                    request.getRazorpayPaymentLinkId());
+            signatureData.put(
+                    "payment_link_reference_id",
+                    request.getRazorpayPaymentLinkReferenceId());
+            signatureData.put(
+                    "payment_link_status",
+                    request.getRazorpayPaymentLinkStatus());
+            signatureData.put(
+                    "razorpay_payment_id",
+                    request.getRazorpayPaymentId());
+            signatureData.put(
+                    "razorpay_signature",
+                    request.getRazorpaySignature());
+
+            Utils.verifyPaymentLink(signatureData, keySecret);
+
+            PaymentEntity payment = paymentRepository
+                    .findByRazorpayPaymentLinkIdForUpdate(
+                            request.getRazorpayPaymentLinkId())
+                    .orElseThrow(() ->
+                            new InvalidTransactionException(
+                                    "Payment Link not found"));
+
+            if (!payment.getRazorpayPaymentLinkReferenceId().equals(
+                    request.getRazorpayPaymentLinkReferenceId())) {
                 throw new InvalidTransactionException(
-                        "Invalid Payment Link signature");
-            }
-        } catch (RazorpayException e) {
-            log.error("Payment Link signature verification failed", e);
-
-            throw new ExternalServiceException(
-                    "Unable to verify Payment Link signature",
-                    e);
-        }
-
-        PaymentEntity payment = paymentRepository
-                .findByRazorpayPaymentLinkIdForUpdate(
-                        request.getRazorpayPaymentLinkId())
-                .orElseThrow(() ->
-                        new PaymentNotFoundException(
-                                "Payment Link not found"));
-
-        if (!payment.getUser().getUserId().equals(user.getUserId())) {
-            throw new InvalidTransactionException(
-                    "Payment Link does not belong to authenticated user");
-        }
-
-        if (!payment.getRazorpayPaymentLinkReferenceId().equals(
-                request.getRazorpayPaymentLinkReferenceId())) {
-            throw new InvalidTransactionException(
-                    "Payment Link reference does not match");
-        }
-
-        if (payment.getStatus() == PaymentStatus.SUCCESS) {
-            if (request.getRazorpayPaymentId().equals(
-                    payment.getRazorpayPaymentId())) {
-                return true;
+                        "Payment reference ID does not match");
             }
 
-            throw new InvalidTransactionException(
-                    "Payment Link has already been verified with another payment");
-        }
+            if (authenticatedUser != null
+                    && !payment.getUser().getUserId()
+                    .equals(authenticatedUser.getUserId())) {
+                throw new InvalidTransactionException(
+                        "Payment Link does not belong to authenticated user");
+            }
 
-        if (payment.getStatus() != PaymentStatus.CREATED) {
-            throw new InvalidTransactionException(
-                    "Payment is not in a verifiable state");
-        }
+            if (payment.getStatus() == PaymentStatus.SUCCESS) {
+                if (payment.isWalletCredited()
+                        && request.getRazorpayPaymentId().equals(
+                        payment.getRazorpayPaymentId())) {
+                    return true;
+                }
 
-        try {
+                throw new InvalidTransactionException(
+                        "Payment has already been processed "
+                                + "or its state is inconsistent");
+            }
+
+            if (payment.isWalletCredited()) {
+                throw new InvalidTransactionException(
+                        "Wallet credit state is inconsistent");
+            }
+
+            if (payment.getStatus() != PaymentStatus.CREATED) {
+                throw new InvalidTransactionException(
+                        "Payment is not in a verifiable state");
+            }
+
             PaymentLink razorpayLink =
                     razorpayClient.paymentLink.fetch(
                             request.getRazorpayPaymentLinkId());
 
-            String gatewayLinkStatus = razorpayLink.get("status");
-            String gatewayReferenceId = razorpayLink.get("reference_id");
-            String gatewayCurrency = razorpayLink.get("currency");
-
-            if (!"paid".equalsIgnoreCase(gatewayLinkStatus)) {
+            if (!"paid".equalsIgnoreCase(
+                    razorpayLink.get("status").toString())) {
                 throw new InvalidTransactionException(
-                        "Razorpay has not marked this Payment Link as paid");
+                        "Razorpay Payment Link is not paid");
             }
 
-            if (!request.getRazorpayPaymentLinkReferenceId()
-                    .equals(gatewayReferenceId)) {
+            if (!payment.getRazorpayPaymentLinkReferenceId().equals(
+                    razorpayLink.get("reference_id").toString())) {
                 throw new InvalidTransactionException(
-                        "Gateway Payment Link reference does not match");
+                        "Razorpay Payment Link reference does not match");
             }
 
-            if (!"INR".equals(gatewayCurrency)) {
+            if (!"INR".equalsIgnoreCase(
+                    razorpayLink.get("currency").toString())) {
                 throw new InvalidTransactionException(
-                        "Payment currency is invalid");
+                        "Unsupported payment currency");
             }
 
-            Object linkAmountValue = razorpayLink.get("amount");
-            Object paidAmountValue = razorpayLink.get("amount_paid");
+            long expectedAmountPaise = payment.getAmount()
+                    .multiply(new BigDecimal("100"))
+                    .longValueExact();
 
-            if (!(linkAmountValue instanceof Number)
-                    || !(paidAmountValue instanceof Number)) {
+            long linkAmount =
+                    ((Number) razorpayLink.get("amount")).longValue();
+
+            long amountPaid =
+                    ((Number) razorpayLink.get("amount_paid")).longValue();
+
+            if (linkAmount != expectedAmountPaise
+                    || amountPaid != expectedAmountPaise) {
                 throw new InvalidTransactionException(
-                        "Invalid amount returned for Payment Link");
-            }
-
-            int expectedAmount = payment.getAmount()
-                    .multiply(BigDecimal.valueOf(100))
-                    .intValueExact();
-
-            int linkAmount = ((Number) linkAmountValue).intValue();
-            int paidAmount = ((Number) paidAmountValue).intValue();
-
-            if (linkAmount != expectedAmount
-                    || paidAmount != expectedAmount) {
-                throw new InvalidTransactionException(
-                        "Payment Link amount does not match the requested amount");
+                        "Payment amount does not match the requested amount");
             }
 
             Payment razorpayPayment =
                     razorpayClient.payments.fetch(
                             request.getRazorpayPaymentId());
 
-            String gatewayPaymentStatus = razorpayPayment.get("status");
-            String gatewayPaymentCurrency = razorpayPayment.get("currency");
-            String gatewayLinkId = razorpayPayment.get("payment_link_id");
-
-            if (!"captured".equalsIgnoreCase(gatewayPaymentStatus)) {
+            if (!"captured".equalsIgnoreCase(
+                    razorpayPayment.get("status").toString())) {
                 throw new InvalidTransactionException(
                         "Razorpay payment has not been captured");
             }
 
-            if (!request.getRazorpayPaymentLinkId().equals(gatewayLinkId)) {
+            Object paymentsObject = razorpayLink.get("payments");
+
+            if (!(paymentsObject instanceof JSONArray linkPayments)) {
                 throw new InvalidTransactionException(
-                        "Payment does not belong to the specified Payment Link");
+                        "Unable to verify payments for this Payment Link");
             }
 
-            if (!"INR".equals(gatewayPaymentCurrency)) {
-                throw new InvalidTransactionException(
-                        "Payment currency is invalid");
+            boolean matchingCapturedPayment = false;
+
+            for (int i = 0; i < linkPayments.length(); i++) {
+                JSONObject linkedPayment =
+                        linkPayments.getJSONObject(i);
+
+                String linkedPaymentId =
+                        linkedPayment.optString("payment_id");
+
+                String linkedPaymentStatus =
+                        linkedPayment.optString("status");
+
+                if (request.getRazorpayPaymentId().equals(linkedPaymentId)
+                        && "captured".equalsIgnoreCase(
+                        linkedPaymentStatus)) {
+                    matchingCapturedPayment = true;
+                    break;
+                }
             }
 
-            Object paymentAmountValue = razorpayPayment.get("amount");
+            if (!matchingCapturedPayment) {
+                throw new InvalidTransactionException(
+                        "Captured payment does not match this Payment Link");
+            }
 
-            if (!(paymentAmountValue instanceof Number)
-                    || ((Number) paymentAmountValue).intValue()
-                    != expectedAmount) {
+            if (!"INR".equalsIgnoreCase(
+                    razorpayPayment.get("currency").toString())) {
+                throw new InvalidTransactionException(
+                        "Unsupported payment currency");
+            }
+
+            long actualPaymentAmount =
+                    ((Number) razorpayPayment.get("amount")).longValue();
+
+            if (actualPaymentAmount != expectedAmountPaise) {
                 throw new InvalidTransactionException(
                         "Captured payment amount does not match");
             }
 
-            WalletEntity wallet = walletRepository
-                    .findWalletForUpdateByUserId(user.getUserId())
-                    .orElseThrow(() ->
-                            new WalletNotFoundException(
-                                    "Wallet not found"));
+            Long userId = payment.getUser().getUserId();
 
-            payment.setRazorpayPaymentId(
-                    request.getRazorpayPaymentId());
-            payment.setStatus(PaymentStatus.SUCCESS);
-            paymentRepository.save(payment);
+            WalletEntity wallet = walletRepository
+                    .findWalletForUpdateByUserId(userId)
+                    .orElseThrow(() ->
+                            new WalletNotFoundException("Wallet not found"));
 
             wallet.setBalance(
                     wallet.getBalance().add(payment.getAmount()));
+
             walletRepository.save(wallet);
 
             TransactionEntity transaction = new TransactionEntity();
@@ -331,120 +379,23 @@ public class PaymentService {
 
             transactionRepository.save(transaction);
 
+            payment.setRazorpayPaymentId(
+                    request.getRazorpayPaymentId());
+            payment.setWalletCredited(true);
+            payment.setStatus(PaymentStatus.SUCCESS);
+
+            paymentRepository.save(payment);
+
             auditLogService.log(
-                    user.getUserId(),
+                    userId,
                     "PAYMENT_LINK_VERIFIED",
-                    "Verified Payment Link "
-                            + request.getRazorpayPaymentLinkId()
-                            + " for amount " + payment.getAmount());
+                    "Payment verified and wallet credited");
 
             return true;
 
         } catch (RazorpayException e) {
-            log.error(
-                    "Payment Link verification failed for linkId={}",
-                    request.getRazorpayPaymentLinkId(),
-                    e);
-
             throw new ExternalServiceException(
                     "Unable to verify payment with Razorpay",
-                    e);
-        }
-    }
-
-    @Transactional
-    public void refundPayment(RefundRequestDTO request) {
-
-        if (request == null
-                || request.getRazorpayPaymentId() == null
-                || request.getRazorpayPaymentId().isBlank()) {
-            throw new InvalidTransactionException(
-                    "Valid refund payment ID is required");
-        }
-
-        UserEntity user = authService.getAuthenticatedUser();
-
-        PaymentEntity payment = paymentRepository
-                .findByRazorpayPaymentIdForUpdate(
-                        request.getRazorpayPaymentId())
-                .orElseThrow(() ->
-                        new PaymentNotFoundException(
-                                "Payment not found"));
-
-        if (!payment.getUser().getUserId().equals(user.getUserId())) {
-            throw new InvalidTransactionException(
-                    "Payment does not belong to authenticated user");
-        }
-
-        if (payment.getStatus() == PaymentStatus.REFUNDED
-                || payment.getStatus() == PaymentStatus.REFUND_PENDING) {
-            throw new InvalidTransactionException(
-                    "Payment is already refunded or refund is pending");
-        }
-
-        if (payment.getStatus() != PaymentStatus.SUCCESS) {
-            throw new InvalidTransactionException(
-                    "Only successful payments can be refunded");
-        }
-
-        WalletEntity wallet = walletRepository
-                .findWalletForUpdateByUserId(user.getUserId())
-                .orElseThrow(() ->
-                        new WalletNotFoundException(
-                                "Wallet not found"));
-
-        if (wallet.getBalance().compareTo(payment.getAmount()) < 0) {
-            throw new InsufficientBalanceException(
-                    "Insufficient wallet balance for refund");
-        }
-
-        try {
-            Refund refund = razorpayClient.payments.refund(
-                    request.getRazorpayPaymentId());
-
-            String refundId = refund.get("id");
-
-            if (refundId == null || refundId.isBlank()) {
-                throw new ExternalServiceException(
-                        "Refund gateway returned no refund ID",
-                        null);
-            }
-
-            payment.setRazorpayRefundId(refundId);
-            payment.setRefundedAmount(payment.getAmount());
-            payment.setStatus(PaymentStatus.REFUNDED);
-            paymentRepository.save(payment);
-
-            wallet.setBalance(
-                    wallet.getBalance().subtract(payment.getAmount()));
-            walletRepository.save(wallet);
-
-            TransactionEntity transaction = new TransactionEntity();
-            transaction.setSenderWallet(wallet);
-            transaction.setReceiverWallet(null);
-            transaction.setAmount(payment.getAmount());
-            transaction.setType(TransactionType.REFUND);
-            transaction.setStatus(TransactionStatus.SUCCESS);
-            transaction.setCreatedAt(LocalDateTime.now());
-            transaction.setPayment(payment);
-
-            transactionRepository.save(transaction);
-
-            auditLogService.log(
-                    user.getUserId(),
-                    "REFUND",
-                    "Refunded payment "
-                            + request.getRazorpayPaymentId()
-                            + " for amount " + payment.getAmount());
-
-        } catch (RazorpayException e) {
-            log.error(
-                    "Razorpay refund failed for paymentId={}",
-                    request.getRazorpayPaymentId(),
-                    e);
-
-            throw new ExternalServiceException(
-                    "Refund request failed; verify gateway status before retrying",
                     e);
         }
     }
