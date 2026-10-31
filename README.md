@@ -4,280 +4,253 @@
   <img src="https://img.shields.io/badge/Java-21-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white" alt="Java 21"/>
   <img src="https://img.shields.io/badge/Spring_Boot-4.1-6DB33F?style=for-the-badge&logo=springboot&logoColor=white" alt="Spring Boot"/>
   <img src="https://img.shields.io/badge/Spring_Cloud-2025.1-6DB33F?style=for-the-badge&logo=spring&logoColor=white" alt="Spring Cloud"/>
-  <img src="https://img.shields.io/badge/Spring_Security-JWT-6DB33F?style=for-the-badge&logo=springsecurity&logoColor=white" alt="Spring Security"/>
   <img src="https://img.shields.io/badge/PostgreSQL-16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL"/>
   <img src="https://img.shields.io/badge/Redis-7-DC382D?style=for-the-badge&logo=redis&logoColor=white" alt="Redis"/>
-  <img src="https://img.shields.io/badge/Apache_Kafka-4.0-231F20?style=for-the-badge&logo=apachekafka&logoColor=white" alt="Kafka"/>
-  <img src="https://img.shields.io/badge/Flyway-Migrations-CC0200?style=for-the-badge&logo=flyway&logoColor=white" alt="Flyway"/>
-  <img src="https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker"/>
+  <img src="https://img.shields.io/badge/Apache_Kafka-4.0-231F20?style=for-the-badge&logo=apachekafka&logoColor=white" alt="Apache Kafka"/>
+  <img src="https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker Compose"/>
   <img src="https://img.shields.io/badge/Razorpay-Payments-0C2451?style=for-the-badge&logo=razorpay&logoColor=white" alt="Razorpay"/>
   <img src="https://img.shields.io/badge/Maven-Multi--Module-C71A36?style=for-the-badge&logo=apachemaven&logoColor=white" alt="Maven"/>
-  <img src="https://img.shields.io/badge/Swagger-OpenAPI-85EA2D?style=for-the-badge&logo=swagger&logoColor=black" alt="Swagger"/>
-  <img src="https://img.shields.io/badge/JWT-Auth-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white" alt="JWT"/>
-  <img src="https://img.shields.io/badge/Architecture-Microservices-blueviolet?style=for-the-badge" alt="Microservices"/>
+  <img src="https://img.shields.io/badge/Spring_Security-JWT-6DB33F?style=for-the-badge&logo=springsecurity&logoColor=white" alt="Spring Security and JWT"/>
+  <img src="https://img.shields.io/badge/Flyway-Migrations-CC0200?style=for-the-badge&logo=flyway&logoColor=white" alt="Flyway"/>
+  <img src="https://img.shields.io/badge/Swagger-OpenAPI-85EA2D?style=for-the-badge&logo=swagger&logoColor=black" alt="Swagger and OpenAPI"/>
 </p>
 
-A backend digital-wallet system built with **Java 21, Spring Boot 4, PostgreSQL, Redis, Kafka and Docker**
-using a **microservices architecture**. Users can register, add money through Razorpay, transfer money to
-other wallets, withdraw, and view their transaction history – with the safety guarantees a money system needs
-(idempotent requests, row-level locking, fraud checks, audit trail, rate limiting).
+PayMoney is a backend digital-wallet platform built with **Java 21, Spring Boot, PostgreSQL, Redis, Kafka, and Docker**. It uses a microservices architecture to support user accounts, wallet transfers, withdrawals, and Razorpay payment links.
 
 ## Features
 
-* **Authentication & authorization** – JWT login, `USER` / `ADMIN` roles, account deactivation & reactivation, auto-created admin account
-* **Wallets** – one wallet per user, balance lookup (cached in Redis)
-* **Money transfer** – wallet-to-wallet transfers with an `Idempotency-Key` header, so retries never move money twice
-* **Withdrawals** – idempotent withdrawals with balance validation
-* **Add money** – Razorpay Payment Links with server-side signature + amount + currency verification before the wallet is credited
-* **Transaction history** – paginated, newest first, with ownership checks
-* **Fraud check** – blocks a wallet that makes too many transfers within a minute
-* **Concurrency safety** – pessimistic row locks, acquired in a fixed order to avoid deadlocks
-* **Rate limiting** – Redis-backed limiter at the API Gateway for login, register, transfers, withdrawals and payments
-* **Audit logging** – transfers, withdrawals, deposits and payment-link events are published to Kafka (after the DB commit) and stored by a dedicated audit service
-* **API docs** – Swagger / OpenAPI with a JWT bearer scheme
-* **Database versioning** – Flyway migrations in every service
+- JWT authentication and role-based authorization (`USER` / `ADMIN`)
+- User registration, profile management, and account deactivation/reactivation
+- Wallet creation and balance lookup with Redis caching
+- Wallet-to-wallet transfers and withdrawals with idempotency keys
+- Razorpay Payment Links with server-side payment verification
+- Paginated transaction history and ownership checks
+- Fraud checks and database row locking for safer concurrent transfers
+- Redis-backed API rate limiting at the gateway
+- Kafka-based audit logging
+- OpenAPI / Swagger documentation and Flyway database migrations
 
-## Tech stack
+## Technology Stack
 
-| Area | Technology |
+| Area | Technologies |
 |---|---|
-| Language / framework | Java 21, Spring Boot 4.1, Spring MVC, Spring Data JPA, Spring Security |
-| Microservices | Spring Cloud Gateway, Eureka (service discovery), Config Server, OpenFeign |
+| Language and framework | Java 21, Spring Boot, Spring MVC, Spring Data JPA |
+| Microservices | Spring Cloud Gateway, Eureka, Config Server, OpenFeign |
 | Messaging | Apache Kafka |
-| Data | PostgreSQL (database per service), Redis (cache + rate limiting), Flyway |
+| Data | PostgreSQL, Redis, Flyway |
+| Security | Spring Security, JWT, BCrypt |
 | Payments | Razorpay Java SDK |
-| Auth | JWT (jjwt), BCrypt |
-| DevOps | Docker, Docker Compose, Maven multi-module |
+| Build and deployment | Maven, Docker, Docker Compose |
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-  C[Client] --> GW[API Gateway :8080<br/>routing + rate limiting]
-  GW --> US[user-service :8081]
-  GW --> WS[wallet-service :8082]
-  GW --> PS[payment-service :8083]
+    Client --> Gateway[API Gateway]
+    Gateway --> User[user-service]
+    Gateway --> Wallet[wallet-service]
+    Gateway --> Payment[payment-service]
 
-  US -- user-registered / user-updated --> K[(Kafka)]
-  K --> WS
-  WS -- audit-log --> K
-  PS -- audit-log --> K
-  K --> AS[audit-service :8084]
+    User --> Kafka[(Kafka)]
+    Kafka --> Wallet
+    Wallet --> Kafka
+    Payment --> Kafka
+    Kafka --> Audit[audit-service]
 
-  WS -. Feign .-> US
-  PS -. Feign .-> US
-  PS -. Feign .-> WS
+    User --> UserDB[(User DB)]
+    Wallet --> WalletDB[(Wallet DB)]
+    Payment --> PaymentDB[(Payment DB)]
+    Audit --> AuditDB[(Audit DB)]
 
-  US --- DB1[(paymoney_user)]
-  WS --- DB2[(paymoney_wallet)]
-  PS --- DB3[(paymoney_payment)]
-  AS --- DB4[(paymoney_audit)]
-  WS --- R[(Redis)]
-  GW --- R
-
-  CS[Config Server :8888] -.-> GW & US & WS & PS & AS
-  EU[Eureka :8761] -.-> GW & US & WS & PS & AS
+    Gateway --> Redis[(Redis)]
+    Wallet --> Redis
+    Config[Config Server] -. configuration .-> Gateway
+    Config -. configuration .-> User
+    Config -. configuration .-> Wallet
+    Config -. configuration .-> Payment
+    Discovery[Eureka] -. service discovery .-> Gateway
 ```
 
-| Service | Responsibility | Database |
-|---|---|---|
-| `api-gateway` | Single entry point, routing via Eureka, Redis rate limiting | – |
-| `user-service` | Registration, login/JWT, profile & admin APIs, account status | `paymoney_user` |
-| `wallet-service` | Wallets, transfers, withdrawals, deposits, transaction history, idempotency, fraud check, Redis cache | `paymoney_wallet` |
-| `payment-service` | Razorpay payment links and verification | `paymoney_payment` |
-| `audit-service` | Consumes audit events from Kafka and stores them | `paymoney_audit` |
-| `discovery-server` | Eureka service registry | – |
-| `config-server` | Centralised configuration for all services | – |
+### Services
 
-Each service is an independent Spring Boot app (embedded Tomcat), has its own Dockerfile and owns its own database.
-Services talk **asynchronously through Kafka** (events) and **synchronously through OpenFeign** (lookups, wallet credit).
+| Service | Responsibility |
+|---|---|
+| `api-gateway` | Entry point, routing, and rate limiting |
+| `user-service` | Registration, login, JWT, profiles, and account status |
+| `wallet-service` | Wallets, transfers, withdrawals, deposits, and transaction history |
+| `payment-service` | Razorpay payment links and payment verification |
+| `audit-service` | Consumes audit events from Kafka and stores them |
+| `discovery-server` | Eureka service registry |
+| `config-server` | Centralized service configuration |
 
-## Key flows
+Each business service owns its database. Services use Kafka for event-based communication and OpenFeign for synchronous service calls.
 
-**Registration**
+## Key Flows
+
+### User registration
+
 ```mermaid
 sequenceDiagram
-  participant C as Client
-  participant U as user-service
-  participant K as Kafka
-  participant W as wallet-service
-  C->>U: POST /api/v1/register-user
-  U->>U: save user (BCrypt password)
-  U->>K: user-registered
-  K->>W: user-registered
-  W->>W: create wallet (balance 0)
+    actor Client
+    participant User as user-service
+    participant Kafka
+    participant Wallet as wallet-service
+
+    Client->>User: Register
+    User->>User: Validate and save user
+    User->>Kafka: Publish user-registered event
+    Kafka->>Wallet: Deliver event
+    Wallet->>Wallet: Create wallet
 ```
 
-**Transfer**
-```mermaid
-sequenceDiagram
-  participant C as Client
-  participant G as Gateway
-  participant W as wallet-service
-  participant U as user-service
-  participant K as Kafka
-  C->>G: POST /api/v1/transfers (JWT + Idempotency-Key)
-  G->>G: rate limit (Redis)
-  G->>W: route via Eureka
-  W->>U: validate user / account status
-  W->>W: idempotency check, lock both wallets, fraud check, balance check
-  W->>W: debit + credit + save transaction (one DB transaction)
-  W-->>K: audit-log
-  W-->>C: transfer result
-```
+### Wallet transfer
 
-**Add money (Razorpay)**
-```mermaid
-sequenceDiagram
-  participant C as Client
-  participant P as payment-service
-  participant R as Razorpay
-  participant W as wallet-service
-  C->>P: POST /api/v1/payment-links
-  P->>R: create payment link
-  P-->>C: payment link URL
-  C->>R: pays on Razorpay
-  R-->>P: callback (signed)
-  P->>P: verify signature, amount, currency, captured status
-  P->>W: deposit (idempotent per payment)
-  W->>W: credit wallet + DEPOSIT transaction
-```
-
-**Login & request authentication (JWT)**
-```mermaid
-sequenceDiagram
-  participant C as Client
-  participant G as Gateway
-  participant U as user-service
-  participant S as wallet / payment service
-  C->>G: POST /api/v1/auth/login
-  G->>U: route
-  U->>U: verify BCrypt password + account ACTIVE
-  U-->>C: JWT
-  C->>G: any API call with Authorization: Bearer JWT
-  G->>S: route via Eureka
-  S->>S: verify JWT signature
-  S->>U: Feign - load user by email
-  U-->>S: role + account status
-  S->>S: reject if user missing / deactivated, else set security context
-```
-
-**Rate limiting at the gateway**
 ```mermaid
 flowchart TD
-  A[Incoming request] --> B{Rate-limited endpoint?}
-  B -- No --> F[Forward to service]
-  B -- Yes --> C[Identify caller: IP or hashed JWT]
-  C --> D[Redis INCR key, 60s window]
-  D --> E{Count above limit?}
-  E -- No --> F
-  E -- Yes --> G[429 Too Many Requests]
-  D -. Redis down .-> H[503 Rate limiting unavailable]
+    A[Transfer request with JWT and Idempotency-Key] --> B{Key already used?}
+    B -- Same request --> C[Return previous result]
+    B -- Different request --> X[Reject request]
+    B -- New request --> D[Validate user and lock wallets]
+    D --> E{Fraud check and sufficient balance?}
+    E -- No --> X
+    E -- Yes --> F[Debit sender and credit recipient]
+    F --> G[Save transaction and idempotency record]
+    G --> H[Publish audit event]
 ```
 
-**Transfer safety checks inside wallet-service**
-```mermaid
-flowchart TD
-  A[Transfer request + Idempotency-Key] --> B{Key already used?}
-  B -- Same request --> R[Return the original result]
-  B -- Different request --> X[Reject]
-  B -- New --> C[Lock both wallets in ID order]
-  C --> D{Sender wallet belongs to user?}
-  D -- No --> X
-  D -- Yes --> E{Fraud check: 5+ transfers in 1 min?}
-  E -- Yes --> X
-  E -- No --> F{Enough balance?}
-  F -- No --> X
-  F -- Yes --> G[Debit + credit + save transaction + save idempotency key]
-  G --> H[Publish audit-log event]
-```
+## API Endpoints
 
-**Audit logging (event-driven)**
-```mermaid
-flowchart LR
-  W[wallet-service<br/>TRANSFER / WITHDRAW] -->|audit-log| K[(Kafka)]
-  P[payment-service<br/>PAYMENT_LINK_CREATED / VERIFIED] -->|audit-log| K
-  K --> A[audit-service]
-  A --> D[(paymoney_audit)]
-```
+Use the API Gateway as the entry point:
 
-**Kafka event map**
-```mermaid
-flowchart LR
-  U[user-service] -->|user-registered| K[(Kafka)]
-  U -->|user-updated| K
-  K -->|create wallet| W[wallet-service]
-  K -->|sync wallet name| W
-  W -->|audit-log| K
-  P[payment-service] -->|audit-log| K
-  K -->|store audit log| A[audit-service]
-```
-
-**Startup order (Docker Compose)**
-```mermaid
-flowchart LR
-  I[Postgres + Redis + Kafka] --> C[config-server + discovery-server]
-  C --> S[user / wallet / payment / audit services]
-  C --> G[api-gateway]
-```
-
-## API overview (via the gateway, `http://localhost:8080`)
+`http://localhost:8080`
 
 | Method | Endpoint | Access |
 |---|---|---|
-| POST | `/api/v1/register-user` | Public |
-| POST | `/api/v1/auth/login` | Public |
-| POST | `/api/v1/auth/reactivate` | Public |
-| PATCH | `/api/v1/users/me/deactivate` | User |
-| GET | `/api/v1/all-users` | Admin |
-| GET / PUT | `/api/v1/users/{userId}` | Admin |
-| GET | `/api/v1/wallet` | User |
-| POST | `/api/v1/transfers` (`Idempotency-Key` header) | User |
-| POST | `/api/v1/withdrawals` (`Idempotency-Key` header) | User |
-| GET | `/api/v1/wallet/transactions?page=&size=` | User |
-| GET | `/api/v1/transactions/{transactionId}` | User |
-| POST | `/api/v1/payment-links` | User |
-| POST | `/api/v1/payment-link-verifications` | User |
-| GET | `/api/v1/payment-links/callback` | Razorpay callback |
+| `POST` | `/api/v1/register-user` | Public |
+| `POST` | `/api/v1/auth/login` | Public |
+| `POST` | `/api/v1/auth/reactivate` | Public |
+| `PATCH` | `/api/v1/users/me/deactivate` | User |
+| `GET` | `/api/v1/all-users` | Admin |
+| `GET`, `PUT` | `/api/v1/users/{userId}` | Admin |
+| `GET` | `/api/v1/wallet` | User |
+| `POST` | `/api/v1/transfers` | User; requires `Idempotency-Key` |
+| `POST` | `/api/v1/withdrawals` | User; requires `Idempotency-Key` |
+| `GET` | `/api/v1/wallet/transactions?page=&size=` | User |
+| `GET` | `/api/v1/transactions/{transactionId}` | User |
+| `POST` | `/api/v1/payment-links` | User |
+| `POST` | `/api/v1/payment-link-verifications` | User |
+| `GET` | `/api/v1/payment-links/callback` | Razorpay callback |
 
-Swagger UI per service (only reachable from your own machine): `http://localhost:8081/swagger-ui.html` (user), `:8082` (wallet), `:8083` (payment).
+## Testing the API
 
-See `TESTING.md` for step-by-step endpoint testing.
+### 1. Start the services
 
-## Reliability & security notes
-
-* **Internal endpoints** (`/api/v1/internal/**`) need the `X-Internal-Key` header (value from `INTERNAL_API_KEY`). Feign adds it automatically; the gateway never routes these paths.
-* **Service ports** 8081-8084 are bound to `127.0.0.1` only, so the outside world can only reach the gateway (8080).
-* **Kafka after commit** – audit events are sent only after the DB transaction commits, with `max.block.ms=2000` so a Kafka outage cannot hang a transfer.
-* **Retry + dead letter topic** – a failing Kafka listener retries 5 times, then the message goes to `<topic>.DLT`.
-* **Redis down** – the wallet cache is skipped (database is used) instead of failing the request.
-* **Feign timeouts** – 2s connect / 5s read.
-* **Idempotency keys** are unique per user, not globally.
-
-Known limitations (good discussion points): no outbox pattern for the user-registered event, no circuit breaker (Resilience4j), no Razorpay webhook, JWTs have no expiry.
-
-## Run locally
-
-Requirements: Docker Desktop.
+Create a local environment file from the example and fill in the required values:
 
 ```bash
-cp environmentFile.env.example environmentFile.env      # fill in your values
+cp environmentFile.env.example environmentFile.env
+```
+
+Start the application:
+
+```bash
 docker compose --env-file environmentFile.env up --build
 ```
 
-Databases are created automatically (init script) and tables are created by Flyway on startup.
-Eureka dashboard: `http://localhost:8761`.
+Wait for the services to finish starting. The API Gateway is available at `http://localhost:8080`.
 
-Environment variables (`environmentFile.env`): `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, `PAYMONEY_ADMIN_EMAIL`,
-`PAYMONEY_ADMIN_PASSWORD`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `APP_PUBLIC_BASE_URL`, `INTERNAL_API_KEY`.
+### 2. Open Swagger UI
 
-## Project structure
+Use Swagger to inspect each endpoint’s request schema, required fields, and responses:
 
+- User service: `http://localhost:8081/swagger-ui.html`
+- Wallet service: `http://localhost:8082/swagger-ui.html`
+- Payment service: `http://localhost:8083/swagger-ui.html`
+
+For normal API testing, send requests through the gateway at port `8080`.
+
+### 3. Test the main user flow
+
+1. Register a user using `POST /api/v1/register-user`.
+2. Log in using `POST /api/v1/auth/login` and copy the JWT from the response.
+3. In Swagger, click **Authorize** and enter `Bearer <your-token>`. For a REST client, send the token in the `Authorization` header:
+
+   ```http
+   Authorization: Bearer <your-token>
+   ```
+
+4. Check the wallet using `GET /api/v1/wallet`.
+5. Create a payment link using `POST /api/v1/payment-links`. Complete the payment through Razorpay’s test environment, then verify it using the payment verification endpoint.
+6. Transfer money using `POST /api/v1/transfers`. Include a unique `Idempotency-Key` header.
+7. Withdraw money using `POST /api/v1/withdrawals`, also with a unique `Idempotency-Key`.
+8. Review transactions using the transaction-history endpoint.
+
+Use Swagger’s request examples for the exact JSON fields expected by each endpoint.
+
+### 4. Check important behaviors
+
+- Repeat a transfer request with the same idempotency key and same payload; it should not move money twice.
+- Reuse that key with a different payload; the request should be rejected.
+- Try a transfer with insufficient balance; it should fail without changing wallet balances.
+- Confirm a user cannot view another user’s wallet or transaction.
+- Test payment verification with valid and invalid payment details using Razorpay test credentials.
+
+## Run Locally
+
+**Requirement:** Docker Desktop.
+
+```bash
+cp environmentFile.env.example environmentFile.env
+docker compose --env-file environmentFile.env up --build
 ```
+
+The database initialization script creates the databases, and Flyway applies migrations during service startup.
+
+- API Gateway: `http://localhost:8080`
+- Eureka dashboard: `http://localhost:8761`
+
+Required environment variables include `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, `PAYMONEY_ADMIN_EMAIL`, `PAYMONEY_ADMIN_PASSWORD`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `APP_PUBLIC_BASE_URL`, and `INTERNAL_API_KEY`.
+
+**Do not commit `environmentFile.env` or real credentials.** Use `environmentFile.env.example` as the template.
+
+## Project Structure
+
+```text
 PayMoney/
-├── api-gateway/        ├── user-service/      ├── wallet-service/
-├── payment-service/    ├── audit-service/     ├── discovery-server/
-├── config-server/      ├── docker/            ├── docker-compose.yml
-└── pom.xml             (each service: Config, Controller, DTO, Entity, Exception,
-                         Mapper, Repository, Service, db/migration)
+├── api-gateway/
+├── user-service/
+├── wallet-service/
+├── payment-service/
+├── audit-service/
+├── discovery-server/
+├── config-server/
+├── docker/
+├── docker-compose.yml
+└── pom.xml
 ```
+
+## What This Project Demonstrates
+
+PayMoney was built to apply backend engineering concepts in a practical fintech-style application, including:
+
+- Designing and organizing services in a microservices architecture.
+- Building REST APIs with Java and Spring Boot.
+- Implementing authentication and role-based authorization using Spring Security and JWT.
+- Managing wallet and transaction workflows with database transactions.
+- Using PostgreSQL for persistence, Redis for caching, and Kafka for asynchronous communication.
+- Managing database schema changes with Flyway.
+- Containerizing services and supporting local development with Docker Compose.
+- Documenting and exploring APIs through Swagger UI.
+
+The project reflects my hands-on learning and practical application of backend engineering concepts.
+
+
+
+## Authors
+
+**Ayush Sinha**  
+Backend Developer | Java & Spring Boot
+- GitHub: [VASUSINH](https://github.com/VASUSINH)
+- Project: [PayMoney](https://github.com/VASUSINH/PayMoney)
+
+Built as a backend engineering project to explore microservices, secure payment workflows, and event-driven communication.
