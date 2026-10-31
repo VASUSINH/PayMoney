@@ -42,3 +42,7 @@ environmentFile.env
 
 # Maven build output of every module
 **/target/
+*.log
+logs/
+.DS_Store
+Thumbs.db
