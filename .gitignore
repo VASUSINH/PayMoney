@@ -39,3 +39,6 @@ environmentFile.env
 
 # VS Code
 .vscode/
+
+# Maven build output of every module
+**/target/
