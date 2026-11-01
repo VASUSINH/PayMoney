@@ -46,3 +46,5 @@ environmentFile.env
 logs/
 .DS_Store
 Thumbs.db
+
+.idea-backup/
