@@ -11,8 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
-// Called only by the other PayMoney services (not routed by the API Gateway).
-// Callers must send the shared X-Internal-Key header.
+
 @RestController
 public class InternalUserController {
 

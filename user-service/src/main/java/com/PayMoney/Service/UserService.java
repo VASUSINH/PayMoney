@@ -39,6 +39,9 @@ public class UserService {
     @Autowired
     private UserEventProducer userEventProducer;
 
+    @Autowired
+    private RefreshTokenService refreshTokenService;
+
     @Transactional
     public UserResponseDTO register(UserRequestDTO userRequest) {
 
@@ -68,20 +71,30 @@ public class UserService {
         UserEntity user = userRepository
                 .findByEmailIgnoreCase(request.getEmail())
                 .orElseThrow(() ->
-                        new BadCredentialsException("Invalid email or password"));
+                        new BadCredentialsException(
+                                "Invalid email or password"));
 
         if (!passwordEncoder.matches(
                 request.getPassword(), user.getPassword())) {
-            throw new BadCredentialsException("Invalid email or password");
+            throw new BadCredentialsException(
+                    "Invalid email or password");
         }
 
         if (user.getAccountStatus() != AccountStatus.ACTIVE) {
             throw new BadCredentialsException(
-                    "Account is not active. Contact support or reactivate your account if eligible.");
+                    "Account is not active");
         }
 
-        String token = jwtService.generateToken(user);
-        return new LoginResponseDTO(token);
+        String accessToken =
+                jwtService.generateToken(user);
+
+        String refreshToken =
+                refreshTokenService.create(user);
+
+        return new LoginResponseDTO(
+                accessToken,
+                refreshToken,
+                jwtService.getAccessTokenExpirationSeconds());
     }
 
     public UserAuthResponseDTO getUserByEmail(String email) {
@@ -128,7 +141,6 @@ public class UserService {
 
         UserEntity updatedUser = userRepository.save(user);
 
-        // wallet-service updates the wallet name when it receives this event
         userEventProducer.publishUserUpdated(
                 new UserUpdatedEventDTO(
                         updatedUser.getUserId(),
@@ -197,4 +209,40 @@ public class UserService {
                 .orElseThrow(() ->
                         new UserNotFoundException("User not found"));
     }
+
+    @Transactional
+    public UserEntity findOrCreateGoogleUser(
+            String email,
+            String name) {
+
+        return userRepository.findByEmailIgnoreCase(email)
+                .orElseGet(() -> {
+
+                    UserEntity user = new UserEntity();
+
+                    user.setName(name);
+                    user.setEmail(email);
+                    user.setRole("USER");
+                    user.setAccountStatus(AccountStatus.ACTIVE);
+
+                    user.setPassword(
+                            passwordEncoder.encode(
+                                    java.util.UUID.randomUUID().toString()
+                            )
+                    );
+
+                    UserEntity savedUser = userRepository.save(user);
+
+                    userEventProducer.publishUserRegistered(
+                            new UserRegisteredEventDTO(
+                                    savedUser.getUserId(),
+                                    savedUser.getName(),
+                                    savedUser.getEmail()
+                            )
+                    );
+
+                    return savedUser;
+                });
+    }
+
 }

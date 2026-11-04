@@ -1,6 +1,9 @@
 package com.PayMoney.Controller;
 
 import com.PayMoney.DTO.*;
+import com.PayMoney.Entity.UserEntity;
+import com.PayMoney.Service.JwtService;
+import com.PayMoney.Service.RefreshTokenService;
 import com.PayMoney.Service.UserService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
@@ -22,6 +25,12 @@ public class UserController {
 
      @Autowired
      private UserService userService;
+
+     @Autowired
+     private RefreshTokenService refreshTokenService;
+
+        @Autowired
+        private JwtService jwtService;
 
 
 
@@ -99,5 +108,35 @@ public class UserController {
         return ResponseEntity.ok(
                 Map.of("message", "Account successfully reactivated")
         );
+    }
+
+    @PostMapping("/api/v1/auth/refresh")
+    public LoginResponseDTO refresh(
+            @Valid @RequestBody RefreshTokenRequestDTO request) {
+
+        UserEntity user =
+                refreshTokenService.rotate(
+                        request.getRefreshToken());
+
+        String accessToken =
+                jwtService.generateToken(user);
+
+        String refreshToken =
+                refreshTokenService.create(user);
+
+        return new LoginResponseDTO(
+                accessToken,
+                refreshToken,
+                jwtService.getAccessTokenExpirationSeconds());
+    }
+
+    @PostMapping("/api/v1/auth/logout")
+    public ResponseEntity<Void> logout(
+            @Valid @RequestBody RefreshTokenRequestDTO request) {
+
+        refreshTokenService.revoke(
+                request.getRefreshToken());
+
+        return ResponseEntity.noContent().build();
     }
 }

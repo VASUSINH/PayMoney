@@ -13,9 +13,9 @@ x-infra-env: &infra-env
   KAFKA_BOOTSTRAP_SERVERS: kafka:9092
   EUREKA_URL: http://discovery-server:8761/eureka
   CONFIG_SERVER_URL: http://config-server:8888
+  INTERNAL_API_KEY: ${INTERNAL_API_KEY}
 
 services:
-
   postgres:
     image: postgres:16
     environment:
@@ -60,7 +60,11 @@ services:
     volumes:
       - kafka-data:/var/lib/kafka/data
     healthcheck:
-      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1"]
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1"
+        ]
       interval: 10s
       timeout: 10s
       retries: 15
@@ -100,12 +104,13 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      config-server: {condition: service_healthy}
-      discovery-server: {condition: service_healthy}
-      redis: {condition: service_healthy}
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
-  # Ports 8081-8084 are bound to 127.0.0.1 (only your own machine, for Swagger).
-  # The real entry point for clients is the api-gateway on 8080.
   user-service:
     <<: *service
     build:
@@ -115,10 +120,14 @@ services:
     ports:
       - "127.0.0.1:8081:8081"
     depends_on:
-      config-server: {condition: service_healthy}
-      discovery-server: {condition: service_healthy}
-      postgres: {condition: service_healthy}
-      kafka: {condition: service_healthy}
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
 
   wallet-service:
     <<: *service
@@ -129,11 +138,16 @@ services:
     ports:
       - "127.0.0.1:8082:8082"
     depends_on:
-      config-server: {condition: service_healthy}
-      discovery-server: {condition: service_healthy}
-      postgres: {condition: service_healthy}
-      redis: {condition: service_healthy}
-      kafka: {condition: service_healthy}
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
 
   payment-service:
     <<: *service
@@ -144,10 +158,14 @@ services:
     ports:
       - "127.0.0.1:8083:8083"
     depends_on:
-      config-server: {condition: service_healthy}
-      discovery-server: {condition: service_healthy}
-      postgres: {condition: service_healthy}
-      kafka: {condition: service_healthy}
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
 
   audit-service:
     <<: *service
@@ -158,10 +176,14 @@ services:
     ports:
       - "127.0.0.1:8084:8084"
     depends_on:
-      config-server: {condition: service_healthy}
-      discovery-server: {condition: service_healthy}
-      postgres: {condition: service_healthy}
-      kafka: {condition: service_healthy}
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
 
 networks:
   paymoney-net:
